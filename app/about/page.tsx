@@ -10,10 +10,10 @@ export default function AboutPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           About
         </h1>
-        <p className="max-w-2xl text-sm text-slate-600">
+        <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           I&apos;m a back-end developer and Computer Science &amp; Artificial
           Intelligence student based in Ingolstadt, Germany. I enjoy designing
           and building scalable systems that combine reliable infrastructure
@@ -22,29 +22,29 @@ export default function AboutPage() {
       </header>
 
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-4 rounded-xl border border-slate-100 bg-white p-5 shadow-soft">
-          <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+        <div className="space-y-4 rounded-xl border border-slate-100 bg-white p-5 shadow-soft dark:border-slate-700 dark:bg-slate-800 dark:shadow-soft-dark">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Education
           </h2>
-          <div className="space-y-4 text-xs text-slate-700">
+          <div className="space-y-4 text-xs text-slate-700 dark:text-slate-300">
             <div>
-              <h3 className="font-semibold text-slate-900">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                 Technische Hochschule Ingolstadt
               </h3>
-              <p className="text-slate-600">
+              <p className="text-slate-600 dark:text-slate-400">
                 B.Sc. Computer Science &amp; Artificial Intelligence
               </p>
-              <p className="mt-2 text-slate-600">Relevant coursework:</p>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+              <p className="mt-2 text-slate-600 dark:text-slate-400">Relevant coursework:</p>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700 dark:text-slate-300">
                 <li>Algorithms for AI</li>
                 <li>Software Engineering</li>
                 <li>Web Technologies</li>
                 <li>Data Structures</li>
               </ul>
             </div>
-            <div className="border-t border-slate-100 pt-4">
-              <h3 className="font-semibold text-slate-900">Fayoum University</h3>
-              <p className="text-slate-600">
+            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">Fayoum University</h3>
+              <p className="text-slate-600 dark:text-slate-400">
                 B.Sc. (Years 1–2 completed) – foundational Computer Science
                 curriculum with a strong focus on mathematics, programming, and
                 problem solving.
@@ -53,13 +53,13 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl border border-slate-100 bg-white p-5 shadow-soft">
-          <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+        <div className="space-y-4 rounded-xl border border-slate-100 bg-white p-5 shadow-soft dark:border-slate-700 dark:bg-slate-800 dark:shadow-soft-dark">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Professional Experience
           </h2>
-          <div className="space-y-3 text-xs text-slate-700">
+          <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
             <div>
-              <h3 className="font-semibold text-slate-900">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                 Back-End Developer – QoneQ Startup (Remote)
               </h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -81,7 +81,7 @@ export default function AboutPage() {
                 </li>
               </ul>
             </div>
-            <p className="border-t border-slate-100 pt-3 text-slate-700">
+            <p className="border-t border-slate-100 pt-3 text-slate-700 dark:border-slate-700 dark:text-slate-300">
               Across my work, I aim to bring together strong backend engineering
               practices—clean APIs, robust data modeling, observability—with
               AI-driven capabilities such as intelligent routing, smart
@@ -91,8 +91,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-100 bg-slate-50 p-5 text-xs text-slate-700">
-        <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+      <section className="rounded-xl border border-slate-100 bg-slate-50 p-5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           Backend &amp; AI Focus
         </h2>
         <p className="mt-2">

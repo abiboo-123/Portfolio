@@ -16,10 +16,10 @@ export default function ContactPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           Contact
         </h1>
-        <p className="max-w-2xl text-sm text-slate-600">
+        <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           Open to internships, working student roles, and freelance backend
           projects. Feel free to reach out if you&apos;d like to discuss
           backend systems, real-time applications, or AI-driven solutions.
@@ -27,13 +27,13 @@ export default function ContactPage() {
       </header>
 
       <section className="grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)]">
-        <div className="space-y-4 rounded-xl border border-slate-100 bg-white p-5 shadow-soft text-xs text-slate-700">
-          <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+        <div className="space-y-4 rounded-xl border border-slate-100 bg-white p-5 text-xs text-slate-700 shadow-soft dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Contact Details
           </h2>
           <dl className="mt-2 space-y-2">
             <div className="flex flex-col">
-              <dt className="text-slate-500">Email</dt>
+              <dt className="text-slate-500 dark:text-slate-400">Email</dt>
               <dd>
                 <a
                   href={links[0].href}
@@ -44,7 +44,7 @@ export default function ContactPage() {
               </dd>
             </div>
             <div className="flex flex-col">
-              <dt className="text-slate-500">LinkedIn</dt>
+              <dt className="text-slate-500 dark:text-slate-400">LinkedIn</dt>
               <dd>
                 <a
                   href={links[1].href}
@@ -57,7 +57,7 @@ export default function ContactPage() {
               </dd>
             </div>
             <div className="flex flex-col">
-              <dt className="text-slate-500">GitHub</dt>
+              <dt className="text-slate-500 dark:text-slate-400">GitHub</dt>
               <dd>
                 <a
                   href={links[2].href}
@@ -70,17 +70,17 @@ export default function ContactPage() {
               </dd>
             </div>
             <div className="flex flex-col">
-              <dt className="text-slate-500">Location</dt>
+              <dt className="text-slate-500 dark:text-slate-400">Location</dt>
               <dd>{location}</dd>
             </div>
           </dl>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-slate-100 bg-white p-5 shadow-soft">
-          <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+        <div className="space-y-3 rounded-xl border border-slate-100 bg-white p-5 shadow-soft dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Send a Message
           </h2>
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Simple contact form (UI only). This can later be wired to an API
             route or external service.
           </p>
@@ -88,7 +88,7 @@ export default function ContactPage() {
             <div className="space-y-1.5">
               <label
                 htmlFor="name"
-                className="text-xs font-medium text-slate-700"
+                className="text-xs font-medium text-slate-700 dark:text-slate-300"
               >
                 Name
               </label>
@@ -96,14 +96,14 @@ export default function ContactPage() {
                 id="name"
                 name="name"
                 type="text"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:bg-slate-600"
                 placeholder="Your name"
               />
             </div>
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
-                className="text-xs font-medium text-slate-700"
+                className="text-xs font-medium text-slate-700 dark:text-slate-300"
               >
                 Email
               </label>
@@ -111,14 +111,14 @@ export default function ContactPage() {
                 id="email"
                 name="email"
                 type="email"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:bg-slate-600"
                 placeholder="you@example.com"
               />
             </div>
             <div className="space-y-1.5">
               <label
                 htmlFor="message"
-                className="text-xs font-medium text-slate-700"
+                className="text-xs font-medium text-slate-700 dark:text-slate-300"
               >
                 Message
               </label>
@@ -126,7 +126,7 @@ export default function ContactPage() {
                 id="message"
                 name="message"
                 rows={4}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:bg-slate-600"
                 placeholder="Tell me a bit about what you have in mind…"
               />
             </div>

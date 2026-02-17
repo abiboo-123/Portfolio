@@ -10,7 +10,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-soft transition-transform hover:-translate-y-1 hover:shadow-lg">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-soft transition-transform hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:shadow-soft-dark dark:hover:shadow-xl">
       {project.featured_image && (
         <div className="relative h-44 w-full">
           <Image
@@ -23,10 +23,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
       )}
       <div className="flex flex-1 flex-col gap-3 p-4">
         <header>
-          <h3 className="text-base font-semibold text-slate-900">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
             {project.title}
           </h3>
-          <p className="mt-1 line-clamp-3 text-xs text-slate-600">
+          <p className="mt-1 line-clamp-3 text-xs text-slate-600 dark:text-slate-400">
             {project.short_description}
           </p>
         </header>
@@ -34,7 +34,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           {project.tech_stack.slice(0, 6).map((tech) => (
             <span
               key={tech}
-              className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700"
+              className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300"
             >
               {tech}
             </span>
@@ -47,7 +47,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 href={project.github_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                 aria-label="GitHub repository"
               >
                 <GithubIcon className="h-4 w-4" />
@@ -58,7 +58,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 href={project.live_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                 aria-label="Live demo"
               >
                 <ExternalLinkIcon className="h-4 w-4" />
@@ -73,4 +73,3 @@ export function ProjectCard({ project }: ProjectCardProps) {
     </article>
   );
 }
-

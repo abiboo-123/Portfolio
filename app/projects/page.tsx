@@ -36,10 +36,10 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           Projects
         </h1>
-        <p className="max-w-2xl text-sm text-slate-600">
+        <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           A selection of my work across backend services, real-time
           communication, and AI-related projects. Most projects are built with
           TypeScript, Node.js, and modern web tooling.
@@ -47,7 +47,7 @@ export default async function ProjectsPage() {
       </header>
 
       {projects.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-xs text-slate-500">
+        <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400">
           Projects will appear here once created in Supabase.
         </p>
       ) : (

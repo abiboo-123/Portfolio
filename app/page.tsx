@@ -39,16 +39,16 @@ export default async function HomePage() {
   return (
     
     <div className="space-y-12">
-      <section className="grid gap-8 rounded-xl border border-slate-100 bg-white p-6 shadow-soft md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-center">
+      <section className="grid gap-8 rounded-xl border border-slate-100 bg-white p-6 shadow-soft dark:border-slate-700 dark:bg-slate-800 dark:shadow-soft-dark md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-center">
         <div className="space-y-4">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
             Back-End Developer · AI-Focused CS Student
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
             Hi, I&apos;m{" "}
             <span className="text-accent">Habib Mohamed Gouda</span>.
           </h1>
-          <p className="text-sm leading-relaxed text-slate-700">
+          <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
             I build scalable backend systems and real-time applications using
             Node.js, TypeScript, and modern web technologies. Alongside
             production experience in microservices architecture, I am pursuing a
@@ -56,7 +56,7 @@ export default async function HomePage() {
             with a strong focus on machine learning, algorithms, and
             intelligent system design.
           </p>
-          <p className="text-sm leading-relaxed text-slate-700">
+          <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
             My goal is to combine backend engineering with AI-driven solutions
             to build high-performance, scalable intelligent applications.
           </p>
@@ -72,7 +72,7 @@ export default async function HomePage() {
             </CTAButton>
           </div>
         </div>
-        <div className="relative mx-auto h-40 w-40 overflow-hidden rounded-full border border-slate-100 bg-slate-50 shadow-soft md:h-48 md:w-48 flex items-center justify-center">
+        <div className="relative mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50 shadow-soft dark:border-slate-600 dark:bg-slate-700 md:h-48 md:w-48">
           <Image
             src="/profile.jpg"
             alt="Portrait of Habib Mohamed Gouda"
@@ -87,10 +87,10 @@ export default async function HomePage() {
       <section className="space-y-4">
         <header className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+            <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               Featured Projects
             </h2>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Selected work showcasing backend engineering and AI-focused
               projects.
             </p>
@@ -100,7 +100,7 @@ export default async function HomePage() {
           </CTAButton>
         </header>
         {featuredProjects.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-xs text-slate-500">
+          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400">
             Featured projects will appear here once configured in Supabase.
           </p>
         ) : (

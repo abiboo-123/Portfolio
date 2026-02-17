@@ -12,11 +12,11 @@ interface CTAButtonProps {
 
 const variantClasses: Record<CTAButtonVariant, string> = {
   primary:
-    "bg-accent text-white hover:bg-accent-dark shadow-soft hover:shadow-lg",
+    "bg-accent text-white hover:bg-accent-dark shadow-soft hover:shadow-lg dark:shadow-soft-dark dark:hover:bg-accent-light",
   secondary:
-    "bg-white text-accent border border-accent hover:bg-accent hover:text-white",
+    "bg-white text-accent border border-accent hover:bg-accent hover:text-white dark:bg-slate-800 dark:border-accent-light dark:text-accent-light dark:hover:bg-accent dark:hover:text-white dark:hover:border-accent",
   ghost:
-    "bg-transparent text-slate-900 border border-slate-200 hover:bg-slate-50",
+    "bg-transparent text-slate-900 border border-slate-200 hover:bg-slate-50 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-800",
 };
 
 export function CTAButton({
@@ -48,4 +48,3 @@ export function CTAButton({
     </Link>
   );
 }
-
