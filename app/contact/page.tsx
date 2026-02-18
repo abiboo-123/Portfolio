@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContactForm } from "@/components/ContactForm";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -81,62 +82,9 @@ export default function ContactPage() {
             Send a Message
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400">
-            Simple contact form (UI only). This can later be wired to an API
-            route or external service.
+            Fill out the form below and I&apos;ll get back to you as soon as possible.
           </p>
-          <form className="mt-3 space-y-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="name"
-                className="text-xs font-medium text-slate-700 dark:text-slate-300"
-              >
-                Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:bg-slate-600"
-                placeholder="Your name"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="text-xs font-medium text-slate-700 dark:text-slate-300"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:bg-slate-600"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="message"
-                className="text-xs font-medium text-slate-700 dark:text-slate-300"
-              >
-                Message
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                rows={4}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none transition-colors focus:border-accent focus:bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:bg-slate-600"
-                placeholder="Tell me a bit about what you have in mind…"
-              />
-            </div>
-            <button
-              type="button"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-accent px-4 py-2 text-xs font-medium text-white shadow-soft transition-colors hover:bg-accent-dark"
-            >
-              Submit (coming soon)
-            </button>
-          </form>
+          <ContactForm />
         </div>
       </section>
     </div>

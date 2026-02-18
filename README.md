@@ -14,7 +14,9 @@ A production-ready portfolio website built with Next.js 14, TypeScript, Tailwind
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ```
+   The service role key is required for the contact form API (server-only; never exposed to the client).
 
 3. **Add profile image:**
    Place your profile photo at `public/profile.jpg`
@@ -44,6 +46,7 @@ A production-ready portfolio website built with Next.js 14, TypeScript, Tailwind
 - ✅ SEO-friendly metadata
 - ✅ Responsive design
 - ✅ Dynamic project pages with sections and images
+- ✅ Contact form with Supabase storage, validation, and rate limiting
 
 ## Troubleshooting
 

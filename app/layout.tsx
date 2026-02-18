@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-900 dark:text-slate-100">
+        <Analytics />
         <ThemeProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
