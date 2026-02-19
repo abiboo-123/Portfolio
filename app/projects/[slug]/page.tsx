@@ -84,7 +84,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 src={project.featured_image}
                 alt={project.title}
                 fill
-                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="w-full h-auto object-cover"
               />
             </div>
           )}
@@ -194,11 +195,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <section className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400">
             <p>
               Interested in similar work or extending this project with
-              AI-driven features?{" "}
-              <CTAButton href="/contact" variant="ghost">
+              AI-driven features?
+            </p>
+            <div className="mt-8 flex justify-center">
+              <CTAButton
+                href="/contact"
+                variant="primary"
+                className="w-full sm:w-auto"
+              >
                 Get in touch
               </CTAButton>
-            </p>
+            </div>
           </section>
         </div>
       </section>
@@ -232,7 +239,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     src={image.image_url}
                     alt={image.caption ?? project.title}
                     fill
-                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="w-full h-auto object-cover"
                   />
                 </div>
                 {image.caption && (

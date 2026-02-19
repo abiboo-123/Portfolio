@@ -8,6 +8,7 @@ interface CTAButtonProps {
   children: ReactNode;
   variant?: CTAButtonVariant;
   external?: boolean;
+  className?: string;
 }
 
 const variantClasses: Record<CTAButtonVariant, string> = {
@@ -24,10 +25,18 @@ export function CTAButton({
   children,
   variant = "primary",
   external = false,
+  className,
 }: CTAButtonProps) {
-  const classes =
-    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-medium transition-colors transition-shadow duration-150 " +
-    variantClasses[variant];
+  const baseClasses =
+    "inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors transition-shadow duration-150 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900";
+
+  const classes = [
+    baseClasses,
+    variantClasses[variant],
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   if (external) {
     return (

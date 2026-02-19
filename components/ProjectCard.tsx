@@ -17,7 +17,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
             src={project.featured_image}
             alt={project.title}
             fill
-            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="w-full h-auto object-cover"
           />
         </div>
       )}

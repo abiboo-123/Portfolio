@@ -37,8 +37,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
-            <main className="mx-auto flex w-full max-w-5xl flex-1 px-4 py-8">
-              <div className="w-full space-y-10">{children}</div>
+            <main className="w-full max-w-7xl flex-1 px-4 py-12 mx-auto sm:px-6 lg:px-8 md:py-20">
+              <div className="w-full max-w-5xl mx-auto space-y-10">
+                {children}
+              </div>
             </main>
             <Footer />
           </div>
