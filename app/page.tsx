@@ -36,6 +36,8 @@ async function getFeaturedProjects(): Promise<Project[]> {
 export default async function HomePage() {
   const featuredProjects = await getFeaturedProjects();
 
+  const cvUrl = "https://drive.google.com/file/d/1UwkU43P3pg9eKACRa-GJZlm8w33sdOxn/view?usp=sharing";
+
   return (
     
     <div className="space-y-12">
@@ -64,7 +66,7 @@ export default async function HomePage() {
             <CTAButton href="/projects" variant="primary">
               View Projects
             </CTAButton>
-            <CTAButton href="https://drive.google.com/file/d/14P326M7_EWB68zQW5NvXNgR9UlDed2Xw/view?usp=sharing"  variant="secondary" external={true}>
+            <CTAButton href={cvUrl}  variant="secondary" external={true}>
               Download CV
             </CTAButton>
             <CTAButton href="/contact" variant="ghost">
