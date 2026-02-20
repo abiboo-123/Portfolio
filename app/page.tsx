@@ -36,7 +36,8 @@ async function getFeaturedProjects(): Promise<Project[]> {
 export default async function HomePage() {
   const featuredProjects = await getFeaturedProjects();
 
-  const cvUrl = "https://drive.google.com/file/d/1UwkU43P3pg9eKACRa-GJZlm8w33sdOxn/view?usp=sharing";
+  const cvUrl =
+    "https://drive.google.com/file/d/1UwkU43P3pg9eKACRa-GJZlm8w33sdOxn/view?usp=sharing";
 
   return (
     <div className="space-y-12">
@@ -54,8 +55,8 @@ export default async function HomePage() {
             Node.js, TypeScript, and modern web technologies. Alongside
             production experience in microservices architecture, I am pursuing a
             B.Sc. in Computer Science &amp; Artificial Intelligence in Germany,
-            with a strong focus on machine learning, algorithms, and
-            intelligent system design.
+            with a strong focus on machine learning, algorithms, and intelligent
+            system design.
           </p>
           <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
             My goal is to combine backend engineering with AI-driven solutions
@@ -63,7 +64,11 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-col items-center gap-3 pt-4 sm:flex-row sm:justify-center md:justify-start">
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <CTAButton href="/projects" variant="primary" className="w-full sm:w-auto">
+              <CTAButton
+                href="/projects"
+                variant="primary"
+                className="w-full sm:w-auto"
+              >
                 View Projects
               </CTAButton>
               <CTAButton
@@ -97,8 +102,13 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
       <section className="space-y-4">
+        {/* Work in Progress Notice */}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+          🚧 This portfolio is actively being updated — more projects and
+          detailed case studies are coming soon.
+        </div>
+
         <header className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -109,7 +119,11 @@ export default async function HomePage() {
               projects.
             </p>
           </div>
-          <CTAButton href="/projects" variant="ghost" className="whitespace-nowrap">
+          <CTAButton
+            href="/projects"
+            variant="ghost"
+            className="whitespace-nowrap"
+          >
             All Projects
           </CTAButton>
         </header>
@@ -128,4 +142,3 @@ export default async function HomePage() {
     </div>
   );
 }
-
