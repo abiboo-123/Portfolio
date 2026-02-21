@@ -9,6 +9,12 @@ export function Footer() {
           Back-End Developer & AI-Focused Computer Science Student · Based in
           Ingolstadt, Germany
         </p>
+        <a
+          href="/admin"
+          className="text-center sm:text-right text-primary hover:underline"
+        >
+          Admin Panel
+        </a>
       </div>
     </footer>
   );

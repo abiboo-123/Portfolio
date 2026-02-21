@@ -4,7 +4,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import type { ReactNode } from "react";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/next";
+import { AdminLayoutWrapper } from "@/components/admin/AdminLayoutWrapper";
 
 export const metadata: Metadata = {
   title: {
@@ -35,15 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-900 dark:text-slate-100">
         <ThemeProvider>
-          <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="w-full max-w-7xl flex-1 px-4 py-12 mx-auto sm:px-6 lg:px-8 md:py-20">
-              <div className="w-full max-w-5xl mx-auto space-y-10">
-                {children}
-              </div>
-            </main>
-            <Footer />
-          </div>
+          <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
         </ThemeProvider>
         <Analytics />
       </body>
