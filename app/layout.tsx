@@ -33,6 +33,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             __html: `(function(){var k='portfolio-theme';var v=localStorage.getItem(k);if(v==='dark'||v==='light'){document.documentElement.classList.add(v);return;}var d=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.classList.add(d);})();`,
           }}
         />
+        <meta
+          name="google-site-verification"
+          content="CLKllNaEJXeyiT-iH-TcxmNLyxcos33qn3PtsYtvkRw"
+        />
       </head>
       <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-900 dark:text-slate-100">
         <ThemeProvider>

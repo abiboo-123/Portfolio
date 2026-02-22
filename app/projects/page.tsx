@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "A collection of backend and AI-focused projects built with Node.js, TypeScript, and modern web technologies.",
 };
 
-async function getProjects(): Promise<Project[]> {
+export async function getProjects(): Promise<Project[]> {
   try {
     const supabase = createSupabaseServerClient();
 
@@ -60,4 +60,3 @@ export default async function ProjectsPage() {
     </div>
   );
 }
-
