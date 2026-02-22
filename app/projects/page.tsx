@@ -2,33 +2,13 @@ import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import type { Project } from "@/types/project";
 import { ProjectCard } from "@/components/ProjectCard";
+import { getProjects } from "@/lib/projects";
 
 export const metadata: Metadata = {
   title: "Projects",
   description:
     "A collection of backend and AI-focused projects built with Node.js, TypeScript, and modern web technologies.",
 };
-
-export async function getProjects(): Promise<Project[]> {
-  try {
-    const supabase = createSupabaseServerClient();
-
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching projects:", error.message);
-      return [];
-    }
-
-    return data ?? [];
-  } catch (error) {
-    console.error("Failed to initialize Supabase:", error);
-    return [];
-  }
-}
 
 export default async function ProjectsPage() {
   const projects = await getProjects();
