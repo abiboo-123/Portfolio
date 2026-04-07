@@ -37,7 +37,7 @@ export default async function HomePage() {
   const featuredProjects = await getFeaturedProjects();
 
   const cvUrl =
-    "https://drive.google.com/file/d/1UwkU43P3pg9eKACRa-GJZlm8w33sdOxn/view?usp=sharing";
+    "https://drive.google.com/file/d/1BnEf5oWKXHDRSoB6aJ_fsal_rJiH26jD/view?usp=sharing";
 
   return (
     <div className="space-y-12">
