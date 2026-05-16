@@ -242,18 +242,18 @@ export const uploadPayloadSchema = z.object({
 });
 
 export type ContactFormSchemaInput = z.infer<typeof contactFormSchema>;
-export type ContactFormField = keyof ContactFormSchemaInput;
+export type ContactFormField = Extract<keyof ContactFormSchemaInput, string>;
 export type ProjectPayload = z.infer<typeof projectPayloadSchema>;
-export type ProjectPayloadField = keyof ProjectPayload;
+export type ProjectPayloadField = Extract<keyof ProjectPayload, string>;
 export type ProjectSectionCreatePayload = z.infer<typeof projectSectionCreateSchema>;
 export type ProjectSectionUpdatePayload = z.infer<typeof projectSectionUpdateSchema>;
-export type ProjectSectionField = keyof ProjectSectionCreatePayload | keyof ProjectSectionUpdatePayload;
+export type ProjectSectionField = Extract<keyof ProjectSectionCreatePayload | keyof ProjectSectionUpdatePayload, string>;
 export type ProjectImageCreatePayload = z.infer<typeof projectImageCreateSchema>;
 export type ProjectImageUpdatePayload = z.infer<typeof projectImageUpdateSchema>;
-export type ProjectImageField = keyof ProjectImageCreatePayload | keyof ProjectImageUpdatePayload;
+export type ProjectImageField = Extract<keyof ProjectImageCreatePayload | keyof ProjectImageUpdatePayload, string>;
 export type MessageStatusUpdatePayload = z.infer<typeof messageStatusUpdateSchema>;
-export type MessageStatusField = keyof MessageStatusUpdatePayload;
+export type MessageStatusField = Extract<keyof MessageStatusUpdatePayload, string>;
 export type CmsPayload = z.infer<typeof cmsPayloadSchema>;
-export type CmsPayloadField = keyof CmsPayload;
+export type CmsPayloadField = Extract<keyof CmsPayload, string>;
 export type UploadPayload = z.infer<typeof uploadPayloadSchema>;
-export type UploadField = keyof UploadPayload;
+export type UploadField = Extract<keyof UploadPayload, string>;

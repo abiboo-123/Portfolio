@@ -479,19 +479,19 @@ export async function uploadPortfolioImage(payload: UploadPayload) {
 
 type ReplaceableCmsTable = "social_links" | "skills" | "contact_channels";
 
-type ReplaceRowsOptions<TPayload extends { id?: string; order_index: number }> = {
+type ReplaceRowsOptions<TRow extends { id?: string; order_index: number }> = {
   table: ReplaceableCmsTable;
   existingIds: string[];
-  rows: TPayload[];
-  mapRow: (row: TPayload) => Record<string, unknown>;
+  rows: TRow[];
+  mapRow: (row: TRow) => Record<string, unknown>;
 };
 
-async function replaceCmsRows<TPayload extends { id?: string; order_index: number }>({
+async function replaceCmsRows<TRow extends { id?: string; order_index: number }>({
   table,
   existingIds,
   rows,
   mapRow,
-}: ReplaceRowsOptions<TPayload>) {
+}: ReplaceRowsOptions<TRow>) {
   const supabase = createSupabaseAdminClient();
   const submittedIds = rows
     .map((row) => row.id)
@@ -602,7 +602,7 @@ export async function saveCmsAdminData(payload: CmsPayload) {
     }
   }
 
-  await replaceCmsRows({
+  await replaceCmsRows<CmsPayload["socialLinks"][number]>({
     table: "social_links",
     existingIds: current.socialLinks.map((link: { id: string }) => link.id),
     rows: payload.socialLinks,
@@ -616,7 +616,7 @@ export async function saveCmsAdminData(payload: CmsPayload) {
     }),
   });
 
-  await replaceCmsRows({
+  await replaceCmsRows<CmsPayload["skills"][number]>({
     table: "skills",
     existingIds: current.skills.map((skill: { id: string }) => skill.id),
     rows: payload.skills,
@@ -630,7 +630,7 @@ export async function saveCmsAdminData(payload: CmsPayload) {
     }),
   });
 
-  await replaceCmsRows({
+  await replaceCmsRows<CmsPayload["contactChannels"][number]>({
     table: "contact_channels",
     existingIds: current.contactChannels.map((channel: { id: string }) => channel.id),
     rows: payload.contactChannels,

@@ -1,6 +1,6 @@
 # CMS Architecture Notes
 
-This project now includes an admin-focused CMS foundation that is intentionally separate from the public frontend rendering path.
+This project includes an admin-focused CMS foundation that is intentionally separate from the public frontend rendering path.
 
 ## Content Model
 
@@ -16,15 +16,29 @@ These tables are designed to make future public sections editable without requir
 
 ## Dashboard Workflow
 
-The `/admin/content` dashboard route edits the CMS records through grouped forms:
+The CMS admin UI is page/section oriented instead of one giant editor. The `/admin/content` route is an overview that links to focused workspaces:
 
-- editable section copy and hero-specific CTA fields
-- profile image and resume file management
-- repeatable social links
-- repeatable skills and technologies
-- repeatable contact channels
+- `/admin/content/homepage` for homepage hero and notice content
+- `/admin/content/about` for about-page intro, education, experience, and focus content
+- `/admin/content/projects` as the CMS bridge to the existing specialized `/admin/projects` workflow
+- `/admin/content/resume` for the current CV/downloadable resume asset
+- `/admin/content/social` for social/media profile links
+- `/admin/content/skills` for skills and technology taxonomy records
+- `/admin/content/contact` for structured contact information
+- `/admin/content/assets` for profile images and reusable assets
+- `/admin/content/sections` for future reusable keyed content sections
+
+Each workspace uses shared CMS data-loading and save behavior, while editor and preview components are reused across pages. This keeps admin UX visual and content-oriented without duplicating the backend contract.
 
 The dashboard saves through `GET /api/admin/cms` and `PUT /api/admin/cms`, which use shared validation and the existing admin authorization wrapper.
+
+## Preview Pattern
+
+Preview support is implemented as a reusable admin pattern:
+
+- page workspaces combine form editors with sticky preview cards
+- collection workspaces preview ordered links, skills, contact details, or assets
+- future CMS areas can reuse the same section editor, asset editor, list card, and preview shell components
 
 ## Public Frontend Boundary
 
