@@ -1,97 +1,67 @@
 # Admin Authentication and Authorization
 
-This document explains the current admin auth flow and the role model used by the backend.
+This document explains the current admin authentication and authorization architecture.
 
 ## Overview
 
-The admin system now distinguishes between:
+Admin access requires two checks:
 
-- authentication
-- authorization
+1. **Authentication** - the user has a valid Supabase Auth session.
+2. **Authorization** - the authenticated user has the configured admin role.
 
-This means a user must:
+Both page access and API access are protected. API routes enforce authorization even when middleware has already protected the admin page shell.
 
-1. have a valid Supabase session
-2. have the configured admin role
+## Login Flow
 
-## Authentication Flow
+1. The user visits `/admin/login`.
+2. The login page uses the browser Supabase client.
+3. Supabase Auth signs in with email/password.
+4. Supabase stores session cookies.
+5. Later admin page and API requests use those cookies to resolve the user.
 
-### Login
+## Page Protection
 
-1. The admin login page calls Supabase Auth using email/password.
-2. Supabase returns a session.
-3. Session cookies are stored by Supabase.
-4. Later page and API requests use those cookies for identity resolution.
+`middleware.ts` protects `/admin/*` routes.
 
-### Server-Side Session Checks
+Current behavior:
 
-Server-side auth uses:
+- unauthenticated users are redirected to `/admin/login`
+- authenticated admins are redirected away from `/admin/login`
+- authenticated non-admin users are blocked from protected admin pages
 
-- `lib/supabase-auth.ts`
+Middleware is for page-level access control and user experience. It is not the only security boundary.
 
-This creates a cookie-aware Supabase server client for:
+## API Protection
 
-- API route auth checks
-- server-side admin page checks
+Admin API routes use `withAdminRoute(...)` from `lib/services/admin-auth.ts`.
 
-## Authorization Flow
+The wrapper:
 
-Authorization is implemented in:
-
-- `lib/services/admin-auth.ts`
-- `middleware.ts`
-
-### API Routes
-
-Admin API routes use:
-
-- `withAdminRoute(...)`
-
-That wrapper:
-
-- resolves the current Supabase user
-- verifies the admin role
-- provides a typed auth context to the route handler
-- centralizes unauthorized and forbidden error handling
-
-### Admin Pages
-
-`middleware.ts` protects `/admin/*` pages by:
-
-- redirecting unauthenticated users to `/admin/login`
-- redirecting authenticated admins away from `/admin/login`
-- redirecting authenticated non-admin users away from `/admin/*`
+- resolves the current Supabase user from the server request context
+- extracts supported role metadata
+- checks the configured admin role
+- passes an auth context to the route handler
+- maps unauthenticated requests to `401`
+- maps authenticated non-admin requests to `403`
+- maps service errors to standard admin API errors
 
 ## Role Sources
 
-The current implementation checks these fields:
+The current implementation checks these Supabase user metadata fields:
 
 - `app_metadata.roles`
 - `app_metadata.role`
 - `user_metadata.roles`
 - `user_metadata.role`
 
-The accepted role name is:
+The expected role name is:
 
-- `ADMIN_ROLE`
-- or `admin` if not configured
+- `ADMIN_ROLE`, if configured
+- otherwise `admin`
 
 ## Recommended Role Placement
 
 Preferred:
-
-- `app_metadata.role = "admin"`
-
-Also supported:
-
-- `app_metadata.roles = ["admin"]`
-
-Compatibility fallback:
-
-- `user_metadata.role`
-- `user_metadata.roles`
-
-## Example Admin Metadata
 
 ```json
 {
@@ -99,7 +69,9 @@ Compatibility fallback:
 }
 ```
 
-Or:
+stored in `app_metadata`.
+
+Also supported:
 
 ```json
 {
@@ -107,15 +79,39 @@ Or:
 }
 ```
 
+Compatibility fallbacks in `user_metadata` are supported, but `app_metadata` is preferred because it is normally controlled by trusted server/admin processes rather than by the end user.
+
+## Authorization Scope
+
+The current system has a single admin capability level. A user with the configured admin role can access all current dashboard functions:
+
+- dashboard stats
+- project management
+- CMS content and asset management
+- message management
+- uploads
+
+There is no separate per-feature permission model yet.
+
+## Security Notes
+
+- Admin APIs must continue to use `withAdminRoute(...)`.
+- Service-role Supabase operations must remain server-only.
+- Client components should never receive or log service-role secrets.
+- Adding new admin routes should include validation and service-layer delegation, not direct unguarded Supabase writes.
+
 ## Current Limitations
 
-- no separate permissions model beyond role membership
-- no dedicated `admins` table or permission registry
-- no audit trail for role changes
-- middleware and service layer currently duplicate role normalization logic
+- one role controls all admin capabilities
+- no dedicated `admins` table
+- no audit log for admin actions
+- no role-change audit trail
+- no session/device management UI
 
-## Recommended Future Improvements
+## Future Improvements
 
-- move role normalization into one shared helper used by both middleware and services
-- add richer permissions if multiple admin capabilities are introduced
-- add audit logging for privileged actions
+- add more granular permissions if multiple admin roles are needed
+- add audit logging for privileged mutations
+- add an admin activity page
+- document operational procedures for granting and revoking access
+- consider moving admin membership to a dedicated database table if metadata-only roles become insufficient
