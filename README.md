@@ -1,68 +1,71 @@
 # Habib Mohamed Gouda Portfolio
 
-A Next.js 14 portfolio application with a Supabase-backed content layer, authenticated admin CMS, structured backend validation, and a service-layer architecture for maintainable admin operations.
+A Next.js 14 portfolio application with a public portfolio site, an authenticated admin dashboard, a Supabase-backed CMS foundation, structured validation, and service-layer backend operations.
 
-## Overview
+## Current State
 
-This repository contains a single App Router application that serves:
+The repository currently contains two intentionally different surfaces:
 
-- a public portfolio website
-- an authenticated admin dashboard
-- internal API routes for contact submissions and admin mutations
-- a Supabase integration for auth, database access, and storage
+- **Admin CMS/dashboard:** dynamic and Supabase-backed. Admins can manage projects, contact messages, editable CMS content groups, reusable assets, social links, skills, and contact channels.
+- **Public frontend:** mostly preserves the existing static/server-rendered portfolio behavior. Project pages read project data from Supabase, but the newer page-oriented CMS records are not yet fully wired into public rendering. Future frontend integration is planned to happen incrementally with safe fallbacks.
 
-The backend has been refactored around:
-
-- shared Zod validation schemas
-- typed API response helpers
-- centralized admin auth and authorization
-- reusable service-layer CRUD functions
-- safer multi-step delete and upload cleanup behavior
+This boundary is deliberate: the CMS can evolve and content can be prepared without forcing a risky public-site rendering rewrite.
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 14 App Router
 - React 18
 - TypeScript
 - Tailwind CSS
-- Supabase
-- Zod
+- Supabase Auth, Database, and Storage
+- Zod validation
 - Vercel Analytics
 
-## Features
+## Core Features
 
-- Server-rendered public portfolio pages
-- Dynamic project listing and project detail pages
-- Supabase-backed admin dashboard and CMS flows
-- Role-based admin authorization using Supabase user metadata/claims
-- Shared backend validation with Zod
-- Typed admin API success and error responses
-- Contact form sanitization, validation, and rate limiting
-- Service-layer admin CRUD logic
-- Supabase Storage image upload flow with cleanup safeguards
-- SEO metadata, `robots.ts`, and `sitemap.ts`
+### Public Portfolio
 
-## Backend Highlights
+- Server-rendered homepage, about page, projects list, project details, and contact page.
+- Supabase-backed project listing and project detail pages.
+- Structured project sections and project image galleries.
+- Contact form validation, sanitization, in-memory rate limiting, and Supabase persistence.
+- SEO support through metadata, `robots.ts`, and `sitemap.ts`.
 
-The current backend architecture includes:
+### Admin Dashboard
 
-- `lib/validation/` for shared payload validation
-- `lib/api/` for standardized API response formatting
-- `lib/services/` for reusable business logic, auth guards, and error handling
-- `app/api/admin/` for thin admin route handlers
-- `app/api/contact/route.ts` for public contact submissions
+- Supabase email/password login.
+- Middleware-protected `/admin/*` pages.
+- Role-based admin authorization using Supabase user metadata.
+- Dashboard stats for projects, new messages, editable CMS sections, and draft CMS sections.
+- Sidebar navigation for Dashboard, Projects, Content CMS, Messages, and public-site access.
+- Project CRUD workflows with section and image management.
+- Message inbox with status filtering and status updates.
+- Page-oriented CMS workspaces for homepage, about, projects, resume, social links, skills, contact info, assets, and reusable sections.
+- CMS preview cards and editor flows that let admins review changes before saving.
 
-Detailed backend documentation:
+### Backend Systems
 
-- [Architecture](./ARCHITECTURE.md)
-- [Backend Guide](./docs/BACKEND.md)
-- [API Guide](./docs/API.md)
-- [Supabase Guide](./docs/SUPABASE.md)
-- [Admin Auth Guide](./docs/ADMIN_AUTH.md)
+- Thin API route handlers under `app/api/`.
+- Shared Zod schemas in `lib/validation/`.
+- Standard admin API response envelopes in `lib/api/`.
+- Reusable admin, contact, auth, and error services in `lib/services/`.
+- Supabase client separation for browser auth, session-aware server auth, public/server reads, and privileged service-role operations.
+- Upload validation for images and PDFs up to 10 MB.
+- Best-effort Supabase Storage cleanup for deleted project images and featured images.
+
+## Documentation Map
+
+- [Architecture](./ARCHITECTURE.md) - full system architecture and boundaries.
+- [CMS](./docs/CMS.md) - CMS content model, page-oriented dashboard, preview behavior, and frontend integration plan.
+- [Backend](./docs/BACKEND.md) - validation, service layer, upload behavior, and backend roadmap.
+- [API](./docs/API.md) - public and admin HTTP contracts.
+- [Supabase](./docs/SUPABASE.md) - database tables, migrations, storage, auth metadata, and operations.
+- [Admin Auth](./docs/ADMIN_AUTH.md) - authentication, authorization, role metadata, and limitations.
+- [AI Contract](./AI_CONTRACT.md) - implementation guardrails for AI-assisted work.
 
 ## Environment Variables
 
-Create a `.env.local` file in the project root with:
+Create `.env.local` in the repository root:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
@@ -73,17 +76,12 @@ ADMIN_ROLE=admin
 
 ### Environment Notes
 
-- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: public anonymous key used by browser auth and public/server reads
-- `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`: current server-side privileged key used by service-layer admin writes and contact inserts
-- `ADMIN_ROLE`: role name required for admin access; defaults to `admin`
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: public anonymous key used by browser auth and public/server reads.
+- `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`: current service-role key read by the server-side privileged Supabase client.
+- `ADMIN_ROLE`: required admin role; defaults to `admin` when unset.
 
-Important:
-
-- The service-role key must only be configured in trusted server environments
-- The current variable name includes a `NEXT_PUBLIC_` prefix because that is how the code currently reads it
-- Even with that name, it must never be exposed to browser code or public runtime output
-- A future cleanup should rename it to a server-only variable such as `SUPABASE_SERVICE_ROLE_KEY`
+Important: the service-role key is named with a `NEXT_PUBLIC_` prefix because that is how the current code reads it. Treat it as server-only secret material and never expose it to browser code or public runtime output. A future cleanup should rename it to `SUPABASE_SERVICE_ROLE_KEY` or another server-only name.
 
 ## Setup
 
@@ -95,24 +93,44 @@ npm install
 
 ### 2. Configure Supabase
 
-Provision:
+Provision or verify the base portfolio tables, then apply the additive migrations in `supabase/migrations`:
+
+```text
+supabase/migrations/202605160001_cms_foundation.sql
+supabase/migrations/202605160002_message_status_expansion.sql
+```
+
+The application expects these tables:
 
 - `projects`
 - `project_sections`
 - `project_images`
 - `contact_messages`
-- `portfolio-images` storage bucket
-- at least one Supabase Auth user with the configured admin role
+- `cms_sections`
+- `cms_assets`
+- `social_links`
+- `skills`
+- `contact_channels`
 
-See [docs/SUPABASE.md](./docs/SUPABASE.md) for the expected setup.
+The application also expects a public Supabase Storage bucket named `portfolio-images`.
 
-### 3. Configure environment variables
+See [docs/SUPABASE.md](./docs/SUPABASE.md) for schema and storage details.
 
-Add the required values to `.env.local`.
+### 3. Configure an admin user
+
+Create a Supabase Auth user and assign the configured admin role through user metadata. Preferred metadata:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+The backend also supports role arrays such as `{ "roles": ["admin"] }` in `app_metadata` or `user_metadata`.
 
 ### 4. Add static assets
 
-Place the profile image at:
+The current public frontend still expects the profile fallback image at:
 
 ```text
 public/profile.jpg
@@ -124,110 +142,75 @@ public/profile.jpg
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open <http://localhost:3000> for the public site and <http://localhost:3000/admin/login> for the admin login.
 
-### 6. Type-check the project
+### 6. Type-check
 
 ```bash
 npx tsc --noEmit
 ```
-
-## Deployment
-
-This project is well suited for Vercel with Supabase as the managed backend.
-
-### Recommended Deployment Flow
-
-1. Push the repository to GitHub
-2. Import the project into Vercel
-3. Configure all environment variables in Vercel
-4. Configure Supabase tables, storage, and admin roles
-5. Deploy
-
-### Production Checklist
-
-- set the real site domain in `app/layout.tsx`
-- configure `ADMIN_ROLE`
-- verify admin users have the required Supabase metadata role
-- verify storage bucket access and cleanup expectations
-- verify the service-role key is stored only in server-side hosting settings
 
 ## Project Structure
 
 ```text
 .
 |-- app/
-|   |-- api/
-|   |   |-- admin/
-|   |   `-- contact/
-|   |-- admin/
-|   |-- about/
-|   |-- contact/
-|   |-- projects/
-|   |-- globals.css
+|   |-- admin/                  # Protected dashboard pages and CMS workspaces
+|   |-- api/                    # Public and admin route handlers
+|   |-- about/                  # Public about page
+|   |-- contact/                # Public contact page
+|   |-- projects/               # Public project pages
 |   |-- layout.tsx
 |   |-- page.tsx
 |   |-- robots.ts
 |   `-- sitemap.ts
 |-- components/
-|   |-- admin/
+|   |-- admin/                  # Dashboard, project, and CMS UI components
 |   `-- ...
-|-- docs/
-|   |-- ADMIN_AUTH.md
-|   |-- API.md
-|   |-- BACKEND.md
-|   `-- SUPABASE.md
+|-- docs/                       # Backend, API, CMS, Supabase, and auth docs
 |-- lib/
-|   |-- api/
-|   |-- contact/
-|   |-- services/
-|   |-- validation/
-|   `-- ...
-|-- public/
-|-- types/
-|-- middleware.ts
+|   |-- api/                    # API response/client helpers
+|   |-- contact/                # Contact form sanitization/types
+|   |-- services/               # Admin/contact/auth service layer
+|   |-- validation/             # Shared Zod schemas/helpers
+|   `-- supabase-*.ts           # Supabase clients by runtime responsibility
+|-- supabase/migrations/        # Additive SQL migrations
+|-- types/                      # Shared TypeScript domain types
+|-- middleware.ts               # Admin page auth gate
 |-- ARCHITECTURE.md
 |-- AI_CONTRACT.md
-|-- next.config.mjs
 |-- package.json
 `-- README.md
 ```
 
-### Important Directories
+## Admin CMS Content Groups
 
-- `app/api/admin/`: thin admin route handlers
-- `lib/services/`: backend business logic and admin auth wrappers
-- `lib/validation/`: shared Zod schemas and validation helpers
-- `lib/api/`: standardized admin API response helpers
-- `middleware.ts`: page-level admin access control
-- `docs/`: backend and operational documentation
+The Content CMS overview links to focused workspaces rather than one large editor:
 
-## Admin Authentication and Authorization
+- Homepage: hero and homepage notice sections.
+- About: intro, education, experience, and focus sections.
+- Projects: bridge to the specialized project CRUD workflow.
+- Resume / CV: current downloadable resume asset.
+- Social Links: ordered external profile links.
+- Skills: ordered technology/category taxonomy.
+- Contact Info: structured contact channels.
+- Assets: profile image and reusable CMS assets.
+- Reusable Sections: keyed content sections for future expansion.
 
-Admin access is role-based, not just login-based.
+The CMS stores content in generic, stable-keyed records that can later power public frontend sections without creating a new table for every page block.
 
-The current implementation checks Supabase user metadata in this order:
+## API Overview
 
-- `app_metadata.roles`
-- `app_metadata.role`
-- `user_metadata.roles`
-- `user_metadata.role`
-
-The configured admin role must match `ADMIN_ROLE`, or `admin` if unset.
-
-More detail:
-
-- [Admin Auth Guide](./docs/ADMIN_AUTH.md)
-
-## API Summary
-
-Public route:
+Public:
 
 - `POST /api/contact`
 
-Admin routes:
+Admin:
 
+- `GET /api/admin/cms`
+- `PUT /api/admin/cms`
 - `GET /api/admin/messages`
+- `GET /api/admin/messages/:id`
 - `PUT /api/admin/messages/:id`
 - `POST /api/admin/projects`
 - `PUT /api/admin/projects/:id`
@@ -240,51 +223,38 @@ Admin routes:
 - `DELETE /api/admin/projects/:id/images/:imageId`
 - `POST /api/admin/upload`
 
-Admin routes use a standardized response envelope:
+Admin API routes require a valid Supabase session and the configured admin role.
 
-- success: `{ success: true, data: ... }`
-- error: `{ success: false, error: { code, message, fieldErrors? } }`
+## Deployment Notes
 
-See [docs/API.md](./docs/API.md) for details.
+This application is suitable for Vercel with Supabase as the managed backend.
 
-## Current Limitations
+Recommended deployment flow:
 
-- No checked-in SQL migrations or schema management
-- Contact route still uses its own response shape rather than the admin API envelope
-- Rate limiting is in-memory and not suitable for horizontal scale
-- Multi-step delete flows use compensating cleanup rather than database transactions
-- Service-role env naming should be cleaned up
-- No pagination for admin list endpoints
-- No automated tests yet
+1. Push the repository to GitHub.
+2. Import the project into Vercel.
+3. Configure all environment variables in Vercel.
+4. Apply Supabase migrations and verify base project/contact tables.
+5. Configure the `portfolio-images` storage bucket.
+6. Create or update at least one admin user with the required role.
+7. Deploy and verify public pages, admin login, uploads, CMS save behavior, and message status updates.
 
-## Recommended Next Improvements
+## Current Limitations and Roadmap
 
-- add Supabase SQL migrations and policy documentation
-- move the contact route onto the shared API response contract
-- replace in-memory rate limiting with Redis or Vercel KV
-- add pagination, filtering, and search to admin endpoints
-- use stronger transactional patterns via SQL/RPC where appropriate
-- add observability, tests, and CI
+Current limitations:
 
-## Troubleshooting
+- The dynamic admin CMS is implemented, but public pages do not yet fully consume CMS section, asset, social, skill, or contact-channel data.
+- Contact API responses still use a public-specific envelope instead of the shared admin API envelope.
+- Contact rate limiting is in memory and is not horizontally scalable.
+- RLS and storage policy SQL are not checked into the repository.
+- Service-role environment variable naming should be changed to a server-only name.
+- Automated tests and monitoring are not yet implemented.
 
-### Supabase data is missing
+Planned direction:
 
-- verify environment variables
-- confirm required tables and storage bucket exist
-- verify you are pointing to the correct Supabase project
-
-### Admin login works but admin APIs return forbidden
-
-- verify the user has the required admin role in Supabase metadata
-- verify `ADMIN_ROLE` matches the stored role
-
-### Type-checking
-
-```bash
-npx tsc --noEmit
-```
-
-## License
-
-This project is intended for personal portfolio use. Add a license if you plan to distribute or open source it.
+- Incrementally read published CMS records on public pages with static fallbacks.
+- Add stronger migration and policy documentation.
+- Add pagination/search/filtering to admin list endpoints.
+- Add audit logging or activity history for admin changes.
+- Add service/route tests and CI checks.
+- Add operational monitoring and structured logging.
