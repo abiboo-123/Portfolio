@@ -57,6 +57,11 @@ The current backend expects:
 - `project_sections`
 - `project_images`
 - `contact_messages`
+- `cms_sections`
+- `cms_assets`
+- `social_links`
+- `skills`
+- `contact_channels`
 
 ## Required Storage
 
@@ -89,7 +94,7 @@ The required role name is:
 
 ## Current Operational Gaps
 
-- no checked-in SQL migrations
+- SQL migrations now exist under `supabase/migrations`; apply them manually in Supabase before using new CMS tables
 - no checked-in RLS policy definitions
 - no checked-in storage policy definitions
 - service-role env naming should be improved

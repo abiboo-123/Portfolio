@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import {
   apiInvalidRequest,
   apiSuccess,
@@ -10,7 +9,15 @@ import {
   type MessageStatusField,
 } from "@/lib/validation/schemas";
 import { withAdminRoute } from "@/lib/services/admin-auth";
-import { updateContactMessageStatus } from "@/lib/services/admin";
+import { getContactMessage, updateContactMessageStatus } from "@/lib/services/admin";
+
+export const GET = withAdminRoute(
+  "Fetch message error:",
+  async (_request, { params }: { params: { id: string } }) => {
+    const message = await getContactMessage(params.id);
+    return apiSuccess(message);
+  }
+);
 
 export const PUT = withAdminRoute(
   "Update message error:",
