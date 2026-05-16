@@ -1,18 +1,17 @@
 # Supabase Guide
 
-This document describes how the current application uses Supabase.
+This document describes how the application currently uses Supabase for authentication, database storage, and object storage.
 
-## Supabase Responsibilities
+## Responsibilities
 
-Supabase currently provides:
+Supabase provides:
 
-- authentication
-- user session handling
-- role metadata source for admin authorization
-- database storage
-- object storage for images
+- Auth users and sessions
+- admin role metadata source
+- relational database tables
+- public object storage for portfolio uploads
 
-## Required Environment Variables
+## Environment Variables
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
@@ -21,55 +20,97 @@ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ADMIN_ROLE=admin
 ```
 
-## Current Supabase Clients
+Notes:
+
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are used by browser/public/server clients.
+- `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` is currently read by the server-side admin client. Despite the prefix, treat it as a server-only secret.
+- `ADMIN_ROLE` defaults to `admin` when unset.
+
+## Supabase Clients
 
 ### `lib/supabase-server.ts`
 
-Used for:
-
-- public/server data reads
+Used for public/server reads with anon credentials.
 
 ### `lib/supabase-client.ts`
 
-Used for:
-
-- browser-side auth login/logout
+Used by browser components for Supabase Auth login/logout.
 
 ### `lib/supabase-auth.ts`
 
-Used for:
-
-- server-side session-aware auth lookups
+Used for cookie-aware server auth checks.
 
 ### `lib/supabase-admin.ts`
 
-Used for:
+Used by services for privileged database writes and storage operations.
 
-- privileged writes
-- storage operations
-- service-layer admin mutations
+## Database Tables
 
-## Required Database Tables
+### Portfolio Tables
 
-The current backend expects:
+- `projects` - top-level projects with slug, descriptions, tech stack, links, featured image, featured flag, and status.
+- `project_sections` - ordered detail sections associated with projects.
+- `project_images` - ordered gallery image records associated with projects.
 
-- `projects`
-- `project_sections`
-- `project_images`
-- `contact_messages`
+### Contact Table
+
+- `contact_messages` - public contact submissions with sender data, message content, request metadata, status, and timestamps.
+
+Supported status values:
+
+- `new`
+- `delivered`
+- `read`
+- `replied`
+- `archived`
+
+### CMS Tables
+
+- `cms_sections` - stable-keyed sections with text fields, JSON `content`, status, ordering, and timestamps.
+- `cms_assets` - stable-keyed image/document/link assets with file metadata and active flag.
+- `social_links` - ordered social/profile links.
+- `skills` - ordered skills with category, optional proficiency, featured flag, and active flag.
+- `contact_channels` - ordered structured contact methods.
+
+## Migrations
+
+Migration files live in `supabase/migrations` and must currently be applied manually.
+
+### `202605160001_cms_foundation.sql`
+
+Adds:
+
 - `cms_sections`
 - `cms_assets`
 - `social_links`
 - `skills`
 - `contact_channels`
+- CMS-related indexes
+- shared `set_updated_at()` trigger function
+- update triggers for CMS tables
+- seed records for initial homepage/about sections, profile/resume assets, social links, and contact channels
 
-## Required Storage
+This migration is intentionally additive and does not switch public rendering to CMS content.
 
-The backend expects a public bucket named:
+### `202605160002_message_status_expansion.sql`
+
+Updates `contact_messages.status` constraints to allow:
+
+- `new`
+- `delivered`
+- `read`
+- `replied`
+- `archived`
+
+Also adds an index on `(status, created_at desc)`.
+
+## Storage
+
+Required bucket:
 
 - `portfolio-images`
 
-Current storage usage:
+Current responsibilities:
 
 - featured project images
 - project gallery images
@@ -77,32 +118,75 @@ Current storage usage:
 - upload endpoint writes
 - delete flows attempt best-effort storage cleanup
 
-## Admin Role Model
+- `featured`
+- `project`
+- `profile`
+- `resume`
+- `cms`
 
-Admin authorization is driven from Supabase user metadata/claims.
+The service returns public URLs and stores those URLs in project or CMS records. Delete flows only clean up objects when a stored public URL can be mapped back to the `portfolio-images` bucket.
 
-The backend checks:
+## Authentication and Admin Roles
+
+Admin users are Supabase Auth users. Authorization is based on metadata roles.
+
+Checked metadata locations:
 
 - `app_metadata.roles`
 - `app_metadata.role`
 - `user_metadata.roles`
 - `user_metadata.role`
 
-The required role name is:
+Preferred metadata:
 
-- `ADMIN_ROLE`
-- or `admin` if the env var is unset
+```json
+{
+  "role": "admin"
+}
+```
 
-## Current Operational Gaps
+Role arrays are also supported:
 
-- SQL migrations now exist under `supabase/migrations`; apply them manually in Supabase before using new CMS tables
-- no checked-in RLS policy definitions
-- no checked-in storage policy definitions
-- service-role env naming should be improved
+```json
+{
+  "roles": ["admin"]
+}
+```
 
-## Recommended Future Supabase Improvements
+Prefer storing roles in `app_metadata` for stronger server-side control.
 
-- add SQL migrations to the repository
-- add policy documentation and policy SQL
-- rename the service-role env var to a server-only name
-- document any bucket policy assumptions explicitly
+## RLS and Policy Status
+
+The repository currently does not include complete RLS policy SQL or storage policy SQL.
+
+Because admin operations use the service-role client, service-layer admin mutations do not depend on browser-side write permissions. Public reads and storage access still need to be configured appropriately in Supabase for the deployed environment.
+
+Future work should add explicit policy migrations/documentation for:
+
+- public project reads
+- public published CMS reads after frontend CMS integration
+- contact message inserts
+- admin-only table writes if service-role usage is reduced
+- public storage object reads
+- admin upload/storage writes
+
+## Operational Checklist
+
+Before using the admin CMS in a new Supabase project:
+
+1. Create or migrate base `projects`, `project_sections`, `project_images`, and `contact_messages` tables.
+2. Apply all files under `supabase/migrations`.
+3. Create the `portfolio-images` bucket.
+4. Configure public read behavior for stored assets as required by the application.
+5. Create a Supabase Auth user.
+6. Add admin role metadata to that user.
+7. Set all environment variables in local and hosted environments.
+8. Verify CMS load/save, upload, project CRUD, and message status updates.
+
+## Future Supabase Improvements
+
+- Add base table migrations if they are not already managed elsewhere.
+- Add RLS and storage policy SQL to the repository.
+- Rename service-role env var to a server-only name.
+- Add backup/restore and incident-response notes.
+- Add public `published` CMS query guidance when frontend integration is implemented.

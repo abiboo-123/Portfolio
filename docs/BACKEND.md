@@ -1,149 +1,240 @@
 # Backend Guide
 
-This document explains the current backend implementation, its completed improvements, remaining weaknesses, and recommended next steps.
+This document explains the current backend implementation, including validation, services, auth, uploads, CMS data flow, and remaining technical debt.
 
-## Current Backend Summary
+## Backend Summary
 
-The backend is implemented inside the Next.js application and is structured around:
+The backend is implemented inside the Next.js App Router application. It uses:
 
-- thin route handlers in `app/api/`
-- shared validation in `lib/validation/`
-- shared response helpers in `lib/api/`
-- centralized business logic in `lib/services/`
-- Supabase integration helpers in `lib/supabase-*`
+- route handlers in `app/api/`
+- shared Zod schemas and helpers in `lib/validation/`
+- shared admin response helpers in `lib/api/`
+- reusable services in `lib/services/`
+- Supabase clients in `lib/supabase-*.ts`
 
-This is now a clearer and more maintainable architecture than the original route-centric implementation.
+The admin backend is now service-layer oriented. Route handlers are thin and focus on HTTP concerns; services own business logic and Supabase operations.
 
-## Major Backend Improvements Completed
+## Route Handler Layer
 
-The following backend refactors are now complete:
+Route handlers are responsible for:
 
-- shared Zod validation schemas for projects, sections, images, uploads, message updates, and contact input
-- shared `safeParse` validation helper with typed field errors
-- centralized service-layer CRUD logic for admin operations
-- shared admin route auth wrapper
-- role-based authorization using Supabase metadata/claims
-- standardized admin API response helpers
-- standardized admin error mapping
-- service-layer image upload logic
-- compensating rollback and cleanup for multi-step delete/upload flows
+- accepting requests
+- parsing JSON or multipart form data
+- invoking shared validation
+- delegating to services
+- returning response helpers
 
-## Current Backend Structure
+Admin routes are wrapped in `withAdminRoute(...)`, which centralizes authentication, authorization, and error mapping.
 
-### `app/api/`
+Public route currently present:
 
-Responsibilities:
+- `POST /api/contact`
 
-- expose HTTP endpoints
-- parse request input
-- validate payloads
-- call shared services
-- return API responses
+Admin routes currently present:
 
-### `lib/validation/`
+- CMS load/save
+- message listing/detail/status updates
+- project CRUD
+- project section CRUD
+- project image CRUD
+- uploads
 
-Responsibilities:
+## Validation Architecture
 
-- define shared Zod schemas
-- normalize payloads
-- return typed field validation errors
+Validation files:
 
-### `lib/api/`
+- `lib/validation/schemas.ts`
+- `lib/validation/helpers.ts`
 
-Responsibilities:
+The backend validates these payload families:
 
-- standardize admin API success and error response envelopes
-- centralize validation error formatting
+- contact form submissions
+- project create/update payloads
+- project section create/update payloads
+- project image create/update payloads
+- message status updates
+- CMS sections/assets/social links/skills/contact channels
+- upload form-data payloads
 
-### `lib/services/`
+Validation behavior:
 
-Responsibilities:
+- trims and normalizes text inputs
+- maps empty optional strings to `null` where appropriate
+- validates project slugs
+- validates message statuses
+- validates CMS stable keys
+- validates URLs or root-relative asset paths
+- validates upload file type and size
+- returns field-level errors for admin forms
 
-- implement reusable business logic
-- perform database and storage work
-- centralize admin auth and authorization
-- encapsulate multi-step mutation flows
+## Service-Layer Structure
 
-### `lib/supabase-*`
+### `lib/services/admin.ts`
 
-Responsibilities:
+Owns admin business logic:
 
-- provide public/server reads
-- support browser auth
-- read session-aware server auth state
-- perform privileged writes with the service-role client
+- project create/update/delete
+- slug uniqueness checks
+- project section create/update/delete
+- project image create/update/delete
+- message listing, detail lookup, status counts, and status updates
+- dashboard stats
+- upload handling
+- CMS load/save operations
+- storage cleanup helpers
+- rollback helper for project relation delete failures
 
-## Completed vs Incomplete Areas
+### `lib/services/contact.ts`
 
-### Completed
+Owns persistence of sanitized public contact submissions into `contact_messages`.
 
-- project CRUD service extraction
-- section CRUD service extraction
-- image CRUD service extraction
-- message listing and status updates
-- admin upload service extraction
-- role-based admin authorization
-- admin API response standardization
-- admin payload validation standardization
+### `lib/services/admin-auth.ts`
 
-### Still Incomplete
+Owns server-side admin resolution and `withAdminRoute(...)`.
 
-- contact route is not yet aligned to the admin API response envelope
-- SQL migrations are not versioned in-repo
-- RLS and policy documentation are not tracked in-repo
-- no test suite verifies service-layer behavior
-- no background job or queue model exists for heavier async tasks
+### `lib/services/admin-roles.ts`
 
-## Security Improvements
+Owns role extraction/normalization helpers for Supabase user metadata.
 
-Implemented improvements:
+### `lib/services/errors.ts` and `lib/services/http.ts`
 
-- admin APIs now require both authentication and role-based authorization
-- page-level admin access is blocked in middleware
-- payload validation is centralized
-- file uploads validate content type and max size
-- privileged writes remain server-side
-- image cleanup is handled server-side
+Provide service error primitives and HTTP/error mapping helpers.
 
-Remaining weaknesses:
+## Reusable Admin API Pattern
 
-- service-role env naming is unsafe-looking and should be renamed
-- no explicit RLS policy documentation exists
-- no anti-abuse rate limiting for admin routes
-- no audit logging for admin changes
-- role checks rely on metadata conventions rather than a dedicated role model
+Admin mutation routes generally follow this pattern:
 
-## Scalability Improvements
+1. `withAdminRoute("Context error label", async (...) => { ... })`
+2. Parse request body with `readJsonBody(...)` or `request.formData()`.
+3. Validate with `validateSchema(...)` and the appropriate Zod schema.
+4. Return `apiValidationError(...)` if invalid.
+5. Call a service function.
+6. Return `apiSuccess(...)`.
 
-Implemented improvements:
+This pattern keeps authentication, validation, error shape, and persistence consistent across admin endpoints.
 
-- route handlers are thin and reusable
-- business logic is centralized
-- validation logic is reused
-- delete/upload flows are safer than before
+## CMS Service Flow
 
-Remaining limitations:
+### Load
 
-- in-memory contact rate limiting does not scale across instances
-- no pagination on admin list endpoints
-- no queue/worker model for heavy async work
-- no database transaction or RPC-based atomic mutation model
+`getCmsAdminData()` reads:
 
-## Remaining Technical Debt
+- `cms_sections`
+- `cms_assets`
+- `social_links`
+- `skills`
+- `contact_channels`
 
-- duplicate role-normalization logic exists in both middleware and admin auth services
-- contact route response formatting differs from admin routes
-- no schema migration tooling in the repo
-- no typed repository layer over Supabase tables
-- no dedicated operational docs for backups, incident handling, or observability
+and returns a single admin data object.
 
-## Recommended Future Backend Improvements
+### Save
 
-- add SQL migrations and Supabase policy setup files
-- unify public and admin API response contracts
-- add scalable rate limiting
-- add pagination and query controls to admin APIs
-- introduce transaction-oriented SQL/RPC paths for higher-risk operations
-- add test coverage for services and route handlers
-- add observability and structured logging
-- rename `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` to a server-only env var
+`saveCmsAdminData(payload)`:
+
+- upserts `cms_sections` by `section_key`
+- upserts `cms_assets` by `asset_key`
+- replaces `social_links`, `skills`, and `contact_channels` rows by comparing current IDs to submitted IDs
+- reloads and returns saved CMS data
+
+This provides a simple full-payload save model for admin workspaces.
+
+## Upload Architecture
+
+Endpoint:
+
+- `POST /api/admin/upload`
+
+Storage bucket:
+
+- `portfolio-images`
+
+Accepted upload categories:
+
+- `featured`
+- `project`
+- `profile`
+- `resume`
+- `cms`
+
+Accepted files:
+
+- images
+- PDFs
+
+Limit:
+
+- 10 MB
+
+Upload service behavior:
+
+- creates a path based on upload type and timestamped file name
+- uploads to Supabase Storage
+- returns a public URL
+- removes the object if public URL resolution fails after upload
+
+Cleanup behavior:
+
+- project image deletion attempts storage cleanup
+- project deletion attempts storage cleanup for featured and gallery images
+- cleanup is best effort and does not fail successful database deletes
+
+## Authentication and Authorization
+
+Admin authentication uses Supabase Auth sessions.
+
+Admin authorization checks the configured role from Supabase user metadata:
+
+- `app_metadata.roles`
+- `app_metadata.role`
+- `user_metadata.roles`
+- `user_metadata.role`
+
+`ADMIN_ROLE` controls the required role and defaults to `admin`.
+
+Admin pages are protected by middleware, but admin APIs still enforce authorization through `withAdminRoute(...)` to protect direct API access.
+
+## Supabase Integration Patterns
+
+Supabase client separation:
+
+- `lib/supabase-server.ts` - public/server reads with anon key.
+- `lib/supabase-client.ts` - browser auth client.
+- `lib/supabase-auth.ts` - cookie-aware server auth client.
+- `lib/supabase-admin.ts` - privileged service-role client for server-only writes/storage.
+
+The service-role client must only be used in trusted server code.
+
+## Completed Backend Improvements
+
+- shared validation for admin and contact payloads
+- typed validation errors
+- shared admin response envelope
+- central admin auth wrapper
+- service-layer extraction for admin operations
+- CMS load/save API and service implementation
+- message status counts and expanded status workflow
+- safer project delete cleanup and relation rollback behavior
+- upload validation and storage cleanup safeguards
+
+## Current Technical Debt
+
+- public contact response shape differs from admin API envelope
+- in-memory rate limiting is not horizontally scalable
+- admin list endpoints do not have pagination/search/filtering
+- no checked-in RLS/storage policy SQL
+- high-risk multi-step mutations are not database transactions or RPCs
+- no audit log for admin writes
+- no automated service/route tests
+- no operational monitoring/structured logging implementation
+- service-role env var uses a `NEXT_PUBLIC_` prefix and should be renamed
+
+## Future Backend Roadmap
+
+- add pagination, search, and filters for admin lists
+- add tests for validation, services, and route handlers
+- add checked-in Supabase RLS/storage policy migrations
+- add audit/event logging for admin operations
+- move heavier or high-risk workflows to transactional SQL/RPC paths where appropriate
+- replace in-memory contact rate limiting with Redis, Vercel KV, or another shared store
+- rename service-role env var to `SUPABASE_SERVICE_ROLE_KEY`
+- add monitoring for API failures, contact submission failures, and storage cleanup warnings
