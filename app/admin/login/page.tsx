@@ -34,6 +34,8 @@ export default function AdminLoginPage() {
       if (data.session) {
         setLoading(false);
         router.replace("/admin/dashboard");
+        router.refresh();
+        window.location.replace("/admin/dashboard");
       } else {
         setError("Login failed. Please try again.");
         setLoading(false);

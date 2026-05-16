@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseAdminApiResponse } from "@/lib/api/client";
 import type { ProjectSection } from "@/types/project";
 
 interface ProjectSectionsManagerProps {
@@ -36,12 +37,10 @@ export function ProjectSectionsManager({
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to add section");
-      }
-
-      const data = await response.json();
+      const data = await parseAdminApiResponse<ProjectSection>(
+        response,
+        "Failed to add section"
+      );
       setSections([...sections, data]);
       setFormData({
         section_type: "text",
@@ -71,12 +70,10 @@ export function ProjectSectionsManager({
         }
       );
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update section");
-      }
-
-      const data = await response.json();
+      const data = await parseAdminApiResponse<ProjectSection>(
+        response,
+        "Failed to update section"
+      );
       setSections(sections.map((s) => (s.id === id ? data : s)));
       setEditingId(null);
     } catch (err) {
@@ -100,10 +97,10 @@ export function ProjectSectionsManager({
         }
       );
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete section");
-      }
+      await parseAdminApiResponse<{ success: true }>(
+        response,
+        "Failed to delete section"
+      );
 
       setSections(sections.filter((s) => s.id !== id));
     } catch (err) {
@@ -143,7 +140,12 @@ export function ProjectSectionsManager({
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ order_index: update.order_index }),
-          })
+          }).then((response) =>
+            parseAdminApiResponse<ProjectSection>(
+              response,
+              "Failed to reorder sections"
+            )
+          )
         )
       );
       setSections(newSections);

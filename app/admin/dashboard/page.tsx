@@ -1,35 +1,15 @@
-import { createSupabaseAuthClient } from "@/lib/supabase-auth";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
-
-async function getStats() {
-  const supabase = createSupabaseServerClient();
-
-  const [projectsResult, messagesResult] = await Promise.all([
-    supabase.from("projects").select("id", { count: "exact", head: true }),
-    supabase
-      .from("contact_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "new"),
-  ]);
-
-  return {
-    totalProjects: projectsResult.count ?? 0,
-    newMessages: messagesResult.count ?? 0,
-  };
-}
+import { requireAuthorizedAdmin } from "@/lib/services/admin-auth";
+import { getAdminDashboardStats } from "@/lib/services/admin";
 
 export default async function AdminDashboardPage() {
-  const supabase = await createSupabaseAuthClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  try {
+    await requireAuthorizedAdmin();
+  } catch {
     redirect("/admin/login");
   }
 
-  const stats = await getStats();
+  const stats = await getAdminDashboardStats();
 
   return (
     <div className="space-y-6">

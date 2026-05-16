@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAuthorizedAdmin } from "@/lib/services/admin-roles";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -61,7 +62,7 @@ export async function middleware(request: NextRequest) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user) {
+      if (user && isAuthorizedAdmin(user)) {
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
       }
       return response;
@@ -74,6 +75,10 @@ export async function middleware(request: NextRequest) {
 
     if (!user) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+
+    if (!isAuthorizedAdmin(user)) {
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 

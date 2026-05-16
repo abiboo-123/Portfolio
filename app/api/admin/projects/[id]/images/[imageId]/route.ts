@@ -1,98 +1,53 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAuthClient } from "@/lib/supabase-auth";
-import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import { NextRequest } from "next/server";
+import {
+  apiInvalidRequest,
+  apiSuccess,
+  apiValidationError,
+} from "@/lib/api/responses";
+import { readJsonBody, validateSchema } from "@/lib/validation/helpers";
+import {
+  projectImageUpdateSchema,
+  type ProjectImageField,
+} from "@/lib/validation/schemas";
+import { withAdminRoute } from "@/lib/services/admin-auth";
+import {
+  deleteProjectImage,
+  updateProjectImage,
+} from "@/lib/services/admin";
 
-export async function PUT(
-  request: NextRequest,
-  {
-    params,
-  }: { params: { id: string; imageId: string } }
-) {
-  try {
-    // Verify authentication
-    const supabase = await createSupabaseAuthClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withAdminRoute(
+  "Update image error:",
+  async (
+    request,
+    { params }: { params: { id: string; imageId: string } }
+  ) => {
+    const body = await readJsonBody(request);
+    if (body === null) {
+      return apiInvalidRequest();
     }
 
-    const body = await request.json();
-    const updates: Record<string, unknown> = {};
+    const validation = validateSchema<
+      typeof projectImageUpdateSchema,
+      ProjectImageField
+    >(projectImageUpdateSchema, body);
 
-    if (body.image_url !== undefined) updates.image_url = body.image_url;
-    if (body.caption !== undefined) updates.caption = body.caption;
-    if (body.order_index !== undefined) updates.order_index = body.order_index;
-
-    const adminSupabase = createSupabaseAdminClient();
-
-    const { data, error } = await adminSupabase
-      .from("project_images")
-      .update(updates)
-      .eq("id", params.imageId)
-      .eq("project_id", params.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Update image error:", error);
-      return NextResponse.json(
-        { error: "Failed to update image" },
-        { status: 500 }
-      );
+    if (!validation.success) {
+      return apiValidationError(validation);
     }
 
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Update image error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+    const image = await updateProjectImage(
+      params.id,
+      params.imageId,
+      validation.data
     );
+    return apiSuccess(image);
   }
-}
+);
 
-export async function DELETE(
-  request: NextRequest,
-  {
-    params,
-  }: { params: { id: string; imageId: string } }
-) {
-  try {
-    // Verify authentication
-    const supabase = await createSupabaseAuthClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const adminSupabase = createSupabaseAdminClient();
-
-    const { error } = await adminSupabase
-      .from("project_images")
-      .delete()
-      .eq("id", params.imageId)
-      .eq("project_id", params.id);
-
-    if (error) {
-      console.error("Delete image error:", error);
-      return NextResponse.json(
-        { error: "Failed to delete image" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Delete image error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+export const DELETE = withAdminRoute(
+  "Delete image error:",
+  async (_request, { params }: { params: { id: string; imageId: string } }) => {
+    const result = await deleteProjectImage(params.id, params.imageId);
+    return apiSuccess(result);
   }
-}
+);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { parseAdminApiResponse } from "@/lib/api/client";
 import type { ContactMessage, MessageStatus } from "@/types/admin";
 
 export default function AdminMessagesPage() {
@@ -25,10 +26,16 @@ export default function AdminMessagesPage() {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Failed to fetch messages");
+        await parseAdminApiResponse<ContactMessage[]>(
+          response,
+          "Failed to fetch messages"
+        );
       }
 
-      const data = await response.json();
+      const data = await parseAdminApiResponse<ContactMessage[]>(
+        response,
+        "Failed to fetch messages"
+      );
       setMessages(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load messages");
@@ -46,11 +53,18 @@ export default function AdminMessagesPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update status");
+        await parseAdminApiResponse<ContactMessage>(
+          response,
+          "Failed to update status"
+        );
       }
 
+      const updatedMessage = await parseAdminApiResponse<ContactMessage>(
+        response,
+        "Failed to update status"
+      );
       setMessages(
-        messages.map((msg) => (msg.id === id ? { ...msg, status: newStatus } : msg))
+        messages.map((msg) => (msg.id === id ? updatedMessage : msg))
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update status");

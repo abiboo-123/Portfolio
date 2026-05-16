@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseAdminApiResponse } from "@/lib/api/client";
 import type { ProjectImage } from "@/types/project";
 
 interface ProjectImagesManagerProps {
@@ -35,12 +36,10 @@ export function ProjectImagesManager({
         body: formData,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to upload image");
-      }
-
-      const { url } = await response.json();
+      const { url } = await parseAdminApiResponse<{ url: string }>(
+        response,
+        "Failed to upload image"
+      );
 
       // Create image record
       const createResponse = await fetch(
@@ -57,11 +56,16 @@ export function ProjectImagesManager({
       );
 
       if (!createResponse.ok) {
-        const data = await createResponse.json();
-        throw new Error(data.error || "Failed to create image record");
+        await parseAdminApiResponse<ProjectImage>(
+          createResponse,
+          "Failed to create image record"
+        );
       }
 
-      const newImage = await createResponse.json();
+      const newImage = await parseAdminApiResponse<ProjectImage>(
+        createResponse,
+        "Failed to create image record"
+      );
       setImages([...images, newImage]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload image");
@@ -84,12 +88,10 @@ export function ProjectImagesManager({
         }
       );
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update image");
-      }
-
-      const data = await response.json();
+      const data = await parseAdminApiResponse<ProjectImage>(
+        response,
+        "Failed to update image"
+      );
       setImages(images.map((img) => (img.id === id ? data : img)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update image");
@@ -112,10 +114,10 @@ export function ProjectImagesManager({
         }
       );
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete image");
-      }
+      await parseAdminApiResponse<{ success: true }>(
+        response,
+        "Failed to delete image"
+      );
 
       setImages(images.filter((img) => img.id !== id));
     } catch (err) {
@@ -155,7 +157,12 @@ export function ProjectImagesManager({
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ order_index: update.order_index }),
-          })
+          }).then((response) =>
+            parseAdminApiResponse<ProjectImage>(
+              response,
+              "Failed to reorder images"
+            )
+          )
         )
       );
       setImages(newImages);

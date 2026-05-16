@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { parseAdminApiResponse } from "@/lib/api/client";
 import { ProjectCard } from "@/components/ProjectCard";
 import type { Project, ProjectSection, ProjectImage } from "@/types/project";
 import { ProjectSectionsManager } from "./ProjectSectionsManager";
@@ -101,12 +102,10 @@ export function ProjectForm({ project }: ProjectFormProps) {
         body: formData,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to upload image");
-      }
-
-      const data = await response.json();
+      const data = await parseAdminApiResponse<{ url: string }>(
+        response,
+        "Failed to upload image"
+      );
       setFormData((prev) => ({ ...prev, featured_image: data.url }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload image");
@@ -132,12 +131,10 @@ export function ProjectForm({ project }: ProjectFormProps) {
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to save project");
-      }
-
-      const data = await response.json();
+      const data = await parseAdminApiResponse<Project>(
+        response,
+        "Failed to save project"
+      );
       router.push(`/admin/projects/${data.id}/edit`);
       router.refresh();
     } catch (err) {

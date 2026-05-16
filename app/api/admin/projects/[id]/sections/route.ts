@@ -1,53 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAuthClient } from "@/lib/supabase-auth";
-import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import { NextRequest } from "next/server";
+import {
+  apiInvalidRequest,
+  apiSuccess,
+  apiValidationError,
+} from "@/lib/api/responses";
+import { readJsonBody, validateSchema } from "@/lib/validation/helpers";
+import {
+  projectSectionCreateSchema,
+  type ProjectSectionField,
+} from "@/lib/validation/schemas";
+import { withAdminRoute } from "@/lib/services/admin-auth";
+import { createProjectSection } from "@/lib/services/admin";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    // Verify authentication
-    const supabase = await createSupabaseAuthClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withAdminRoute(
+  "Create section error:",
+  async (request, { params }: { params: { id: string } }) => {
+    const body = await readJsonBody(request);
+    if (body === null) {
+      return apiInvalidRequest();
     }
 
-    const body = await request.json();
-    const { section_type, title, content, order_index } = body;
+    const validation = validateSchema<
+      typeof projectSectionCreateSchema,
+      ProjectSectionField
+    >(projectSectionCreateSchema, body);
 
-    const adminSupabase = createSupabaseAdminClient();
-
-    const { data, error } = await adminSupabase
-      .from("project_sections")
-      .insert({
-        project_id: params.id,
-        section_type: section_type || "text",
-        title: title || null,
-        content: content || null,
-        order_index: order_index ?? null,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Create section error:", error);
-      return NextResponse.json(
-        { error: "Failed to create section" },
-        { status: 500 }
-      );
+    if (!validation.success) {
+      return apiValidationError(validation);
     }
 
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Create section error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const section = await createProjectSection(params.id, validation.data);
+    return apiSuccess(section, 201);
   }
-}
+);

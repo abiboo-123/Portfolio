@@ -15,6 +15,7 @@ export function AdminTopbar() {
 
     router.replace("/admin/login");
     router.refresh();
+    window.location.replace("/admin/login");
   };
 
   return (

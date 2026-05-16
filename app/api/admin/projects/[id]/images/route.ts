@@ -1,59 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAuthClient } from "@/lib/supabase-auth";
-import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import { NextRequest } from "next/server";
+import {
+  apiInvalidRequest,
+  apiSuccess,
+  apiValidationError,
+} from "@/lib/api/responses";
+import { readJsonBody, validateSchema } from "@/lib/validation/helpers";
+import {
+  projectImageCreateSchema,
+  type ProjectImageField,
+} from "@/lib/validation/schemas";
+import { withAdminRoute } from "@/lib/services/admin-auth";
+import { createProjectImage } from "@/lib/services/admin";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    // Verify authentication
-    const supabase = await createSupabaseAuthClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withAdminRoute(
+  "Create image error:",
+  async (request, { params }: { params: { id: string } }) => {
+    const body = await readJsonBody(request);
+    if (body === null) {
+      return apiInvalidRequest();
     }
 
-    const body = await request.json();
-    const { image_url, caption, order_index } = body;
+    const validation = validateSchema<
+      typeof projectImageCreateSchema,
+      ProjectImageField
+    >(projectImageCreateSchema, body);
 
-    if (!image_url) {
-      return NextResponse.json(
-        { error: "Image URL is required" },
-        { status: 400 }
-      );
+    if (!validation.success) {
+      return apiValidationError(validation);
     }
 
-    const adminSupabase = createSupabaseAdminClient();
-
-    const { data, error } = await adminSupabase
-      .from("project_images")
-      .insert({
-        project_id: params.id,
-        image_url,
-        caption: caption || null,
-        order_index: order_index ?? null,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Create image error:", error);
-      return NextResponse.json(
-        { error: "Failed to create image record" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Create image error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const image = await createProjectImage(params.id, validation.data);
+    return apiSuccess(image, 201);
   }
-}
+);

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase-admin";
-import { validateContactForm, hasValidationErrors } from "@/lib/contact/validation";
 import { sanitizeContactInput } from "@/lib/contact/sanitize";
 import { isRateLimited } from "@/lib/rate-limit";
-import type { ContactFormInput, ContactApiResponse } from "@/lib/contact/types";
+import type { ContactApiResponse } from "@/lib/contact/types";
+import { readJsonBody, validateSchema } from "@/lib/validation/helpers";
+import {
+  contactFormSchema,
+  type ContactFormField,
+} from "@/lib/validation/schemas";
+import { createContactMessage } from "@/lib/services/contact";
+import { ServiceError } from "@/lib/services/errors";
 
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -13,25 +18,6 @@ function getClientIp(request: NextRequest): string {
   }
   if (realIp) return realIp.trim();
   return "unknown";
-}
-
-async function getRequestBody(request: NextRequest): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
-}
-
-function parseBody(body: unknown): ContactFormInput | null {
-  if (body === null || typeof body !== "object") return null;
-  const o = body as Record<string, unknown>;
-  return {
-    full_name: typeof o.full_name === "string" ? o.full_name : "",
-    email: typeof o.email === "string" ? o.email : "",
-    subject: typeof o.subject === "string" ? o.subject : "",
-    message: typeof o.message === "string" ? o.message : "",
-  };
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<ContactApiResponse>> {
@@ -50,53 +36,49 @@ export async function POST(request: NextRequest): Promise<NextResponse<ContactAp
     );
   }
 
-  const rawBody = await getRequestBody(request);
-  const parsed = parseBody(rawBody);
-  if (!parsed) {
+  const rawBody = await readJsonBody(request);
+  if (rawBody === null) {
     return NextResponse.json(
       { success: false, error: "Invalid request body." },
       { status: 400 }
     );
   }
 
-  const fieldErrors = validateContactForm(parsed);
-  if (hasValidationErrors(fieldErrors)) {
+  const validation = validateSchema<typeof contactFormSchema, ContactFormField>(
+    contactFormSchema,
+    rawBody,
+    "Validation failed. Please check the form."
+  );
+
+  if (!validation.success) {
     return NextResponse.json(
       {
         success: false,
-        error: "Validation failed. Please check the form.",
-        fieldErrors,
+        error: validation.error,
+        fieldErrors: validation.fieldErrors,
       },
       { status: 400 }
     );
   }
 
-  const sanitized = sanitizeContactInput(parsed);
+  const sanitized = sanitizeContactInput(validation.data);
   const userAgent = request.headers.get("user-agent") ?? "";
 
   try {
-    const supabase = createSupabaseAdminClient();
-    const { error } = await supabase.from("contact_messages").insert({
-      full_name: sanitized.full_name,
-      email: sanitized.email,
-      subject: sanitized.subject,
-      message: sanitized.message,
-      status: "new",
-      ip_address: ip,
-      user_agent: userAgent.slice(0, 500),
+    const result = await createContactMessage({
+      form: sanitized,
+      ipAddress: ip,
+      userAgent,
     });
-
-    if (error) {
-      console.error("[contact] Supabase insert error:", error);
-      return NextResponse.json(
-        { success: false, error: "Failed to send message. Please try again." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(result);
   } catch (err) {
     console.error("[contact] Unexpected error:", err);
+    if (err instanceof ServiceError) {
+      return NextResponse.json(
+        { success: false, error: err.message },
+        { status: err.status }
+      );
+    }
     return NextResponse.json(
       { success: false, error: "An unexpected error occurred. Please try again." },
       { status: 500 }

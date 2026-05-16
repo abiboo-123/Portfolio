@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -50,7 +51,12 @@ export function AdminSidebar() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    onClick={() => setIsOpen(false)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setIsOpen(false);
+                      router.push(item.href);
+                      router.refresh();
+                    }}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-accent text-white dark:bg-accent"
