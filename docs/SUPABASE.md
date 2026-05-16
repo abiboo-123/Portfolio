@@ -114,15 +114,9 @@ Current responsibilities:
 
 - featured project images
 - project gallery images
-- profile image uploads
-- resume/PDF uploads
-- future CMS asset uploads
-
-Current upload endpoint:
-
-- `POST /api/admin/upload`
-
-Upload categories:
+- managed CMS profile/resume assets
+- upload endpoint writes
+- delete flows attempt best-effort storage cleanup
 
 - `featured`
 - `project`

@@ -23,10 +23,12 @@ export function ProjectSectionsManager({
     section_type: "text",
     title: "",
     content: "",
-    order_index: sections.length,
+    order_index: sections.reduce((max, section) => Math.max(max, section.order_index ?? 0), 0) + 10,
   });
 
   const handleAdd = async () => {
+    if (loading) return;
+
     setLoading(true);
     setError(null);
 
@@ -41,12 +43,12 @@ export function ProjectSectionsManager({
         response,
         "Failed to add section"
       );
-      setSections([...sections, data]);
+      setSections((currentSections) => [...currentSections, data]);
       setFormData({
         section_type: "text",
         title: "",
         content: "",
-        order_index: sections.length + 1,
+        order_index: Math.max(data.order_index ?? 0, formData.order_index) + 10,
       });
       setShowAddForm(false);
     } catch (err) {
@@ -57,6 +59,8 @@ export function ProjectSectionsManager({
   };
 
   const handleUpdate = async (id: number, updates: Partial<ProjectSection>) => {
+    if (loading) return;
+
     setLoading(true);
     setError(null);
 
@@ -74,7 +78,7 @@ export function ProjectSectionsManager({
         response,
         "Failed to update section"
       );
-      setSections(sections.map((s) => (s.id === id ? data : s)));
+      setSections((currentSections) => currentSections.map((s) => (s.id === id ? data : s)));
       setEditingId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update section");
@@ -84,7 +88,7 @@ export function ProjectSectionsManager({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this section?")) return;
+    if (loading || !confirm("Are you sure you want to delete this section?")) return;
 
     setLoading(true);
     setError(null);
@@ -102,7 +106,7 @@ export function ProjectSectionsManager({
         "Failed to delete section"
       );
 
-      setSections(sections.filter((s) => s.id !== id));
+      setSections((currentSections) => currentSections.filter((s) => s.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete section");
     } finally {
@@ -113,6 +117,8 @@ export function ProjectSectionsManager({
   const handleReorder = async (id: number, direction: "up" | "down") => {
     const index = sections.findIndex((s) => s.id === id);
     if (
+      index === -1 ||
+      loading ||
       (direction === "up" && index === 0) ||
       (direction === "down" && index === sections.length - 1)
     ) {
@@ -150,7 +156,7 @@ export function ProjectSectionsManager({
       );
       setSections(newSections);
     } catch (err) {
-      setError("Failed to reorder sections");
+      setError(err instanceof Error ? err.message : "Failed to reorder sections");
     } finally {
       setLoading(false);
     }
@@ -165,7 +171,8 @@ export function ProjectSectionsManager({
         <button
           type="button"
           onClick={() => setShowAddForm(!showAddForm)}
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-dark dark:bg-accent dark:hover:bg-accent-light"
+          disabled={loading}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent dark:hover:bg-accent-light"
         >
           {showAddForm ? "Cancel" : "Add Section"}
         </button>
@@ -288,7 +295,7 @@ export function ProjectSectionsManager({
                       <button
                         type="button"
                         onClick={() => handleReorder(section.id, "up")}
-                        disabled={index === 0}
+                        disabled={loading || index === 0}
                         className="rounded px-2 py-1 text-xs disabled:opacity-50"
                       >
                         ↑
@@ -296,7 +303,7 @@ export function ProjectSectionsManager({
                       <button
                         type="button"
                         onClick={() => handleReorder(section.id, "down")}
-                        disabled={index === sections.length - 1}
+                        disabled={loading || index === sections.length - 1}
                         className="rounded px-2 py-1 text-xs disabled:opacity-50"
                       >
                         ↓
@@ -304,14 +311,16 @@ export function ProjectSectionsManager({
                       <button
                         type="button"
                         onClick={() => setEditingId(section.id)}
-                        className="rounded px-2 py-1 text-xs"
+                        disabled={loading}
+                        className="rounded px-2 py-1 text-xs disabled:opacity-50"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(section.id)}
-                        className="rounded px-2 py-1 text-xs text-red-600 dark:text-red-400"
+                        disabled={loading}
+                        className="rounded px-2 py-1 text-xs text-red-600 disabled:opacity-50 dark:text-red-400"
                       >
                         Delete
                       </button>

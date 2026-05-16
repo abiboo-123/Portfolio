@@ -207,9 +207,8 @@ export const defaultAssets: EditableAsset[] = [
     asset_key: "resume.current",
     title: "Current CV / Resume",
     asset_type: "document",
-    file_url:
-      "https://drive.google.com/file/d/1BnEf5oWKXHDRSoB6aJ_fsal_rJiH26jD/view?usp=sharing",
-    file_name: "Habib Mohamed Gouda CV",
+    file_url: "/documents/resume.pdf",
+    file_name: "Managed resume upload pending",
     file_type: "application/pdf",
     alt_text: "",
     metadata: {},
@@ -272,4 +271,38 @@ export function getSection(data: EditableCmsData, key: string) {
 
 export function getAsset(data: EditableCmsData, key: string) {
   return data.assets.find((asset) => asset.asset_key === key);
+}
+
+export interface StructuredCmsItem {
+  title: string;
+  subtitle?: string;
+  details: string[];
+}
+
+export interface StructuredCmsContent extends Record<string, unknown> {
+  items: StructuredCmsItem[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function normalizeStructuredCmsContent(
+  content: Record<string, unknown>
+): StructuredCmsContent {
+  const rawItems = Array.isArray(content.items) ? content.items : [];
+  const items = rawItems
+    .filter(isRecord)
+    .map((item) => ({
+      title: typeof item.title === "string" ? item.title : "",
+      subtitle: typeof item.subtitle === "string" ? item.subtitle : "",
+      details: Array.isArray(item.details)
+        ? item.details.filter((detail): detail is string => typeof detail === "string")
+        : [],
+    }));
+
+  return {
+    ...content,
+    items,
+  };
 }

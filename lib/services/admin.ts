@@ -13,6 +13,7 @@ import type {
 import { ServiceError } from "./errors";
 
 const PORTFOLIO_IMAGE_BUCKET = "portfolio-images";
+const MANAGED_RESUME_ASSET_KEY = "resume.current";
 
 function getPortfolioStoragePath(publicUrl: string | null | undefined): string | null {
   if (!publicUrl) {
@@ -424,14 +425,14 @@ export async function updateContactMessageStatus(
   return data;
 }
 
-export async function uploadPortfolioImage(payload: UploadPayload) {
+export async function uploadPortfolioAsset(payload: UploadPayload) {
   const supabase = createSupabaseAdminClient();
   const { file, type } = payload;
-  const fileExt = file.name.split(".").pop();
+  const fileExt = file.name.split(".").pop()?.toLowerCase() || (type === "resume" ? "pdf" : "bin");
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
   const folderByType: Record<UploadPayload["type"], string> = {
     featured: "featured",
-    project: "projects",
+    project: payload.projectId ? `projects/${payload.projectId}` : "projects",
     profile: "profile",
     resume: "documents/resumes",
     cms: "cms",
@@ -451,7 +452,7 @@ export async function uploadPortfolioImage(payload: UploadPayload) {
       });
 
     if (error) {
-      throw new ServiceError("Failed to upload image");
+      throw new ServiceError("Failed to upload asset");
     }
 
     uploaded = true;
@@ -460,7 +461,57 @@ export async function uploadPortfolioImage(payload: UploadPayload) {
       data: { publicUrl },
     } = supabase.storage.from(PORTFOLIO_IMAGE_BUCKET).getPublicUrl(filePath);
 
-    return { url: publicUrl };
+    const assetKey = payload.assetKey ?? (type === "resume" ? MANAGED_RESUME_ASSET_KEY : null);
+
+    if (assetKey) {
+      const existingAssetResult = await supabase
+        .from("cms_assets")
+        .select("title, asset_type, alt_text, metadata")
+        .eq("asset_key", assetKey)
+        .maybeSingle();
+
+      if (existingAssetResult.error) {
+        throw new ServiceError("Failed to load managed asset before upload");
+      }
+
+      const existingMetadata =
+        existingAssetResult.data?.metadata &&
+        typeof existingAssetResult.data.metadata === "object" &&
+        !Array.isArray(existingAssetResult.data.metadata)
+          ? existingAssetResult.data.metadata
+          : {};
+
+      const { error: assetError } = await supabase.from("cms_assets").upsert(
+        {
+          asset_key: assetKey,
+          title:
+            existingAssetResult.data?.title ??
+            (assetKey === MANAGED_RESUME_ASSET_KEY ? "Current CV / Resume" : file.name),
+          asset_type:
+            type === "resume"
+              ? "document"
+              : existingAssetResult.data?.asset_type ?? "image",
+          file_url: publicUrl,
+          file_name: file.name,
+          file_type: file.type,
+          metadata: {
+            ...existingMetadata,
+            bucket: PORTFOLIO_IMAGE_BUCKET,
+            path: filePath,
+            size: file.size,
+            uploaded_at: new Date().toISOString(),
+          },
+          is_active: true,
+        },
+        { onConflict: "asset_key" }
+      );
+
+      if (assetError) {
+        throw new ServiceError("Failed to save managed asset record");
+      }
+    }
+
+    return { url: publicUrl, path: filePath, bucket: PORTFOLIO_IMAGE_BUCKET };
   } catch (error) {
     if (uploaded) {
       await cleanupStorageObjectsBestEffort([
@@ -472,8 +523,13 @@ export async function uploadPortfolioImage(payload: UploadPayload) {
       throw error;
     }
 
-    throw new ServiceError("Failed to upload image");
+    throw new ServiceError("Failed to upload asset");
   }
+}
+
+export async function cleanupUploadedPortfolioAsset(publicUrl: string) {
+  await cleanupStorageObjectsBestEffort([publicUrl]);
+  return { success: true as const };
 }
 
 

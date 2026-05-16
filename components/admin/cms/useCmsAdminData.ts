@@ -89,6 +89,14 @@ export function useCmsAdminData() {
   };
 
   const updateSectionContent = (sectionKey: string, field: string, value: string) => {
+    updateSectionContentValue(sectionKey, field, value);
+  };
+
+  const updateSectionContentValue = (
+    sectionKey: string,
+    field: string,
+    value: unknown
+  ) => {
     setCmsData((current) => ({
       ...current,
       sections: current.sections.map((section) =>
@@ -113,6 +121,7 @@ export function useCmsAdminData() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", asset?.asset_type === "document" ? "resume" : "profile");
+    formData.append("assetKey", assetKey);
 
     setUploadingKey(assetKey);
     setError(null);
@@ -132,7 +141,7 @@ export function useCmsAdminData() {
         file_name: file.name,
         file_type: file.type,
       });
-      setSuccess("Asset uploaded. Save this section to persist the managed asset record.");
+      setSuccess("Asset uploaded and the managed CMS asset record was updated.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload asset");
     } finally {
@@ -251,6 +260,7 @@ export function useCmsAdminData() {
     saveContent,
     updateSection,
     updateSectionContent,
+    updateSectionContentValue,
     updateAsset,
     uploadAsset,
     addSocialLink,

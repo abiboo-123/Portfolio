@@ -2,8 +2,20 @@
 
 import Link from "next/link";
 import { CmsPageShell } from "./CmsPageShell";
-import { AssetEditor, RepeatableListCard, SectionEditor, SectionPreview } from "./CmsEditors";
-import { cmsAreas, contentSectionLabels, type EditableSection } from "./cms-data";
+import {
+  AssetEditor,
+  RepeatableListCard,
+  SectionEditor,
+  SectionPreview,
+  StructuredListSectionEditor,
+} from "./CmsEditors";
+import {
+  cmsAreas,
+  contentSectionLabels,
+  normalizeStructuredCmsContent,
+  type EditableSection,
+  type StructuredCmsItem,
+} from "./cms-data";
 import { useCmsAdminData } from "./useCmsAdminData";
 
 const heroContentFields = [
@@ -120,15 +132,31 @@ export function AboutCmsPage() {
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.8fr)]">
         <div className="space-y-4">
-          {aboutSections.map((section) => (
-            <SectionEditor
-              key={section.section_key}
-              section={section}
-              contentFields={section.section_key === "about.focus" ? focusContentFields : []}
-              onChange={(updates) => cms.updateSection(section.section_key, updates)}
-              onContentChange={(field, value) => cms.updateSectionContent(section.section_key, field, value)}
-            />
-          ))}
+          {aboutSections.map((section) => {
+            if (section.section_key === "about.education" || section.section_key === "about.experience") {
+              return (
+                <StructuredListSectionEditor
+                  key={section.section_key}
+                  section={section}
+                  detailLabel={section.section_key === "about.education" ? "Courses / focus areas" : "Highlights"}
+                  onChange={(updates) => cms.updateSection(section.section_key, updates)}
+                  onItemsChange={(items: StructuredCmsItem[]) =>
+                    cms.updateSectionContentValue(section.section_key, "items", items)
+                  }
+                />
+              );
+            }
+
+            return (
+              <SectionEditor
+                key={section.section_key}
+                section={section}
+                contentFields={section.section_key === "about.focus" ? focusContentFields : []}
+                onChange={(updates) => cms.updateSection(section.section_key, updates)}
+                onContentChange={(field, value) => cms.updateSectionContent(section.section_key, field, value)}
+              />
+            );
+          })}
         </div>
         <AboutPreview sections={aboutSections} />
       </div>
@@ -158,6 +186,9 @@ function AboutPreview({ sections }: { sections: EditableSection[] }) {
                 {section.body && (
                   <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{section.body}</p>
                 )}
+                {(section.section_key === "about.education" || section.section_key === "about.experience") && (
+                  <StructuredItemsPreview section={section} />
+                )}
               </div>
             ))}
         </div>
@@ -167,6 +198,40 @@ function AboutPreview({ sections }: { sections: EditableSection[] }) {
           </p>
         )}
       </SectionPreview>
+    </div>
+  );
+}
+
+function StructuredItemsPreview({ section }: { section: EditableSection }) {
+  const content = normalizeStructuredCmsContent(section.content);
+
+  if (content.items.length === 0) {
+    return (
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        No structured items configured yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-3">
+      {content.items.map((item, index) => (
+        <div key={`${item.title}-${index}`} className="rounded-lg bg-slate-50 p-3 dark:bg-slate-900">
+          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+            {item.title || `Item ${index + 1}`}
+          </p>
+          {item.subtitle && (
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.subtitle}</p>
+          )}
+          {item.details.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-600 dark:text-slate-400">
+              {item.details.map((detail, detailIndex) => (
+                <li key={`${detail}-${detailIndex}`}>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

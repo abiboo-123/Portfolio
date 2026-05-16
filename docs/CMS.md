@@ -134,10 +134,11 @@ Provides a place for keyed content sections that do not yet have a dedicated pag
 
 CMS workspaces use shared editor/preview components:
 
-- section editors update `title`, `eyebrow`, `body`, `status`, `order_index`, and known JSON content fields
-- asset editors update asset metadata and support uploads
-- repeatable list cards manage social links, skills, and contact channels
-- preview cards show a local representation of the edited content before saving
+- `cms_sections` stores stable keyed content blocks such as `homepage.hero`, `homepage.notice`, `about.intro`, `about.education`, `about.experience`, and `about.focus`.
+- `cms_assets` stores managed profile, resume, document, image, and link assets by stable keys such as `profile.image` and `resume.current`; uploaded resume/profile files persist their Supabase Storage URLs directly to these records.
+- `social_links` stores ordered media/profile links.
+- `skills` stores ordered technology and skill taxonomy records.
+- `contact_channels` stores structured contact details.
 
 These previews are admin-side review aids. They do not yet represent a full public live-preview system.
 
@@ -151,7 +152,7 @@ These previews are admin-side review aids. They do not yet represent a full publ
 4. The service loads sections, assets, social links, skills, and contact channels.
 5. The workspace stores the response in local React state.
 
-### Edit
+Each workspace uses shared CMS data-loading and save behavior, while editor and preview components are reused across pages. This keeps admin UX visual and content-oriented without duplicating the backend contract. Education and experience sections use structured `content.items` editing so their existing JSON shape is preserved instead of flattened into generic body copy.
 
 Editors update local state first. Changes are not persisted until the workspace save action runs.
 
