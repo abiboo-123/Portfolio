@@ -224,22 +224,38 @@ export const cmsPayloadSchema = z.object({
   contactChannels: z.array(contactChannelPayloadSchema).max(50),
 });
 
-export const uploadPayloadSchema = z.object({
-  file: uploadFileSchema
-    .refine(
-      (file) => file.type.startsWith("image/") || file.type === "application/pdf",
-      "File must be an image or PDF."
-    )
-    .refine(
+export const uploadPayloadSchema = z
+  .object({
+    file: uploadFileSchema.refine(
       (file) => file.size <= 10 * 1024 * 1024,
       "File size must be less than 10MB."
     ),
-  type: z.enum(["featured", "project", "profile", "resume", "cms"]),
-  projectId: z
-    .union([z.string(), z.null(), z.undefined()])
-    .transform((value) => (typeof value === "string" ? value.trim() : ""))
-    .transform((value) => (value.length > 0 ? value : null)),
-});
+    type: z.enum(["featured", "project", "profile", "resume", "cms"]),
+    projectId: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((value) => (typeof value === "string" ? value.trim() : ""))
+      .transform((value) => (value.length > 0 ? value : null)),
+    assetKey: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((value) => (typeof value === "string" ? value.trim() : ""))
+      .transform((value) => (value.length > 0 ? value : null)),
+  })
+  .superRefine((payload, context) => {
+    const isDocumentUpload = payload.type === "resume";
+    const validMimeType = isDocumentUpload
+      ? payload.file.type === "application/pdf"
+      : payload.file.type.startsWith("image/");
+
+    if (!validMimeType) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["file"],
+        message: isDocumentUpload
+          ? "Resume/CV uploads must be PDF files."
+          : "Image uploads must use an image file type.",
+      });
+    }
+  });
 
 export type ContactFormSchemaInput = z.infer<typeof contactFormSchema>;
 export type ContactFormField = Extract<keyof ContactFormSchemaInput, string>;

@@ -7,7 +7,7 @@ This project includes an admin-focused CMS foundation that is intentionally sepa
 The CMS uses a small set of scalable content primitives:
 
 - `cms_sections` stores stable keyed content blocks such as `homepage.hero`, `homepage.notice`, `about.intro`, `about.education`, `about.experience`, and `about.focus`.
-- `cms_assets` stores managed profile, resume, document, image, and link assets by stable keys such as `profile.image` and `resume.current`.
+- `cms_assets` stores managed profile, resume, document, image, and link assets by stable keys such as `profile.image` and `resume.current`; uploaded resume/profile files persist their Supabase Storage URLs directly to these records.
 - `social_links` stores ordered media/profile links.
 - `skills` stores ordered technology and skill taxonomy records.
 - `contact_channels` stores structured contact details.
@@ -28,7 +28,7 @@ The CMS admin UI is page/section oriented instead of one giant editor. The `/adm
 - `/admin/content/assets` for profile images and reusable assets
 - `/admin/content/sections` for future reusable keyed content sections
 
-Each workspace uses shared CMS data-loading and save behavior, while editor and preview components are reused across pages. This keeps admin UX visual and content-oriented without duplicating the backend contract.
+Each workspace uses shared CMS data-loading and save behavior, while editor and preview components are reused across pages. This keeps admin UX visual and content-oriented without duplicating the backend contract. Education and experience sections use structured `content.items` editing so their existing JSON shape is preserved instead of flattened into generic body copy.
 
 The dashboard saves through `GET /api/admin/cms` and `PUT /api/admin/cms`, which use shared validation and the existing admin authorization wrapper.
 

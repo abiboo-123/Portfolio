@@ -19,11 +19,13 @@ export function ProjectImagesManager({
   const [uploading, setUploading] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
 
     setUploading(true);
     setError(null);
+    let uploadedUrl: string | null = null;
 
     try {
       const formData = new FormData();
@@ -40,6 +42,9 @@ export function ProjectImagesManager({
         response,
         "Failed to upload image"
       );
+      uploadedUrl = url;
+      const nextOrderIndex =
+        images.reduce((max, image) => Math.max(max, image.order_index ?? 0), 0) + 10;
 
       // Create image record
       const createResponse = await fetch(
@@ -50,24 +55,25 @@ export function ProjectImagesManager({
           body: JSON.stringify({
             image_url: url,
             caption: "",
-            order_index: images.length,
+            order_index: nextOrderIndex,
           }),
         }
       );
-
-      if (!createResponse.ok) {
-        await parseAdminApiResponse<ProjectImage>(
-          createResponse,
-          "Failed to create image record"
-        );
-      }
 
       const newImage = await parseAdminApiResponse<ProjectImage>(
         createResponse,
         "Failed to create image record"
       );
-      setImages([...images, newImage]);
+      setImages((currentImages) => [...currentImages, newImage]);
+      input.value = "";
     } catch (err) {
+      if (uploadedUrl) {
+        await fetch("/api/admin/upload", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: uploadedUrl }),
+        }).catch(() => undefined);
+      }
       setError(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setUploading(false);
@@ -92,7 +98,7 @@ export function ProjectImagesManager({
         response,
         "Failed to update image"
       );
-      setImages(images.map((img) => (img.id === id ? data : img)));
+      setImages((currentImages) => currentImages.map((img) => (img.id === id ? data : img)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update image");
     } finally {
@@ -119,7 +125,7 @@ export function ProjectImagesManager({
         "Failed to delete image"
       );
 
-      setImages(images.filter((img) => img.id !== id));
+      setImages((currentImages) => currentImages.filter((img) => img.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete image");
     } finally {
@@ -130,6 +136,9 @@ export function ProjectImagesManager({
   const handleReorder = async (id: number, direction: "up" | "down") => {
     const index = images.findIndex((img) => img.id === id);
     if (
+      index === -1 ||
+      loading ||
+      uploading ||
       (direction === "up" && index === 0) ||
       (direction === "down" && index === images.length - 1)
     ) {
@@ -167,7 +176,7 @@ export function ProjectImagesManager({
       );
       setImages(newImages);
     } catch (err) {
-      setError("Failed to reorder images");
+      setError(err instanceof Error ? err.message : "Failed to reorder images");
     } finally {
       setLoading(false);
     }
@@ -179,13 +188,13 @@ export function ProjectImagesManager({
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
           Project Images
         </h2>
-        <label className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-dark dark:bg-accent dark:hover:bg-accent-light">
+        <label className={`rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-dark dark:bg-accent dark:hover:bg-accent-light ${uploading || loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
           {uploading ? "Uploading..." : "Upload Image"}
           <input
             type="file"
             accept="image/*"
             onChange={handleImageUpload}
-            disabled={uploading}
+            disabled={uploading || loading}
             className="hidden"
           />
         </label>
@@ -222,14 +231,15 @@ export function ProjectImagesManager({
                   handleUpdate(image.id, { caption: e.target.value })
                 }
                 placeholder="Caption"
-                className="mb-2 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-700"
+                disabled={loading || uploading}
+                className="mb-2 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700"
               />
               <div className="flex items-center justify-between">
                 <div className="flex gap-1">
                   <button
                     type="button"
                     onClick={() => handleReorder(image.id, "up")}
-                    disabled={index === 0}
+                    disabled={loading || uploading || index === 0}
                     className="rounded px-2 py-1 text-xs disabled:opacity-50"
                   >
                     ↑
@@ -237,7 +247,7 @@ export function ProjectImagesManager({
                   <button
                     type="button"
                     onClick={() => handleReorder(image.id, "down")}
-                    disabled={index === images.length - 1}
+                    disabled={loading || uploading || index === images.length - 1}
                     className="rounded px-2 py-1 text-xs disabled:opacity-50"
                   >
                     ↓
@@ -246,7 +256,8 @@ export function ProjectImagesManager({
                 <button
                   type="button"
                   onClick={() => handleDelete(image.id)}
-                  className="rounded px-2 py-1 text-xs text-red-600 dark:text-red-400"
+                  disabled={loading || uploading}
+                  className="rounded px-2 py-1 text-xs text-red-600 disabled:opacity-50 dark:text-red-400"
                 >
                   Delete
                 </button>

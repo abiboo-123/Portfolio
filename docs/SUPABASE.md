@@ -73,6 +73,7 @@ Current storage usage:
 
 - featured project images
 - project gallery images
+- managed CMS profile/resume assets
 - upload endpoint writes
 - delete flows attempt best-effort storage cleanup
 
