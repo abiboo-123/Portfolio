@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 import type { ProjectImage, ProjectSection } from "@/types/project";
 import type {
   MessageStatusUpdatePayload,
+  CmsPayload,
   ProjectImageCreatePayload,
   ProjectImageUpdatePayload,
   ProjectPayload,
@@ -373,21 +374,33 @@ export async function listContactMessages(status: string | null) {
 export async function getAdminDashboardStats() {
   const supabase = createSupabaseAdminClient();
 
-  const [projectsResult, messagesResult] = await Promise.all([
-    supabase.from("projects").select("id", { count: "exact", head: true }),
-    supabase
-      .from("contact_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "new"),
-  ]);
+  const [projectsResult, newMessagesResult, cmsSectionsResult, draftSectionsResult] =
+    await Promise.all([
+      supabase.from("projects").select("id", { count: "exact", head: true }),
+      supabase
+        .from("contact_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "new"),
+      supabase.from("cms_sections").select("id", { count: "exact", head: true }),
+      supabase
+        .from("cms_sections")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "draft"),
+    ]);
 
-  if (projectsResult.error || messagesResult.error) {
+  if (projectsResult.error || newMessagesResult.error) {
     throw new ServiceError("Failed to load dashboard stats");
+  }
+
+  if (cmsSectionsResult.error || draftSectionsResult.error) {
+    console.warn("[admin] CMS dashboard counts unavailable. Has the CMS migration been applied?");
   }
 
   return {
     totalProjects: projectsResult.count ?? 0,
-    newMessages: messagesResult.count ?? 0,
+    newMessages: newMessagesResult.count ?? 0,
+    editableSections: cmsSectionsResult.error ? 0 : cmsSectionsResult.count ?? 0,
+    draftSections: draftSectionsResult.error ? 0 : draftSectionsResult.count ?? 0,
   };
 }
 
@@ -416,7 +429,14 @@ export async function uploadPortfolioImage(payload: UploadPayload) {
   const { file, type } = payload;
   const fileExt = file.name.split(".").pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-  const filePath = type === "featured" ? `featured/${fileName}` : `projects/${fileName}`;
+  const folderByType: Record<UploadPayload["type"], string> = {
+    featured: "featured",
+    project: "projects",
+    profile: "profile",
+    resume: "documents/resumes",
+    cms: "cms",
+  };
+  const filePath = `${folderByType[type]}/${fileName}`;
   let uploaded = false;
 
   try {
@@ -454,4 +474,221 @@ export async function uploadPortfolioImage(payload: UploadPayload) {
 
     throw new ServiceError("Failed to upload image");
   }
+}
+
+
+type ReplaceableCmsTable = "social_links" | "skills" | "contact_channels";
+
+type ReplaceRowsOptions<TRow extends { id?: string; order_index: number }> = {
+  table: ReplaceableCmsTable;
+  existingIds: string[];
+  rows: TRow[];
+  mapRow: (row: TRow) => Record<string, unknown>;
+};
+
+async function replaceCmsRows<TRow extends { id?: string; order_index: number }>({
+  table,
+  existingIds,
+  rows,
+  mapRow,
+}: ReplaceRowsOptions<TRow>) {
+  const supabase = createSupabaseAdminClient();
+  const submittedIds = rows
+    .map((row) => row.id)
+    .filter((id): id is string => typeof id === "string");
+  const idsToDelete = existingIds.filter((id) => !submittedIds.includes(id));
+
+  if (idsToDelete.length > 0) {
+    const { error } = await supabase.from(table).delete().in("id", idsToDelete);
+    if (error) {
+      throw new ServiceError(`Failed to remove ${table.replace("_", " ")}`);
+    }
+  }
+
+  for (const row of rows) {
+    const payload = mapRow(row);
+
+    if (row.id) {
+      const { error } = await supabase
+        .from(table)
+        .update(payload)
+        .eq("id", row.id);
+
+      if (error) {
+        throw new ServiceError(`Failed to update ${table.replace("_", " ")}`);
+      }
+      continue;
+    }
+
+    const { error } = await supabase.from(table).insert(payload);
+    if (error) {
+      throw new ServiceError(`Failed to create ${table.replace("_", " ")}`);
+    }
+  }
+}
+
+export async function getCmsAdminData() {
+  const supabase = createSupabaseAdminClient();
+
+  const [sectionsResult, assetsResult, socialsResult, skillsResult, contactsResult] =
+    await Promise.all([
+      supabase.from("cms_sections").select("*").order("order_index"),
+      supabase.from("cms_assets").select("*").order("asset_key"),
+      supabase.from("social_links").select("*").order("order_index"),
+      supabase.from("skills").select("*").order("order_index"),
+      supabase.from("contact_channels").select("*").order("order_index"),
+    ]);
+
+  if (
+    sectionsResult.error ||
+    assetsResult.error ||
+    socialsResult.error ||
+    skillsResult.error ||
+    contactsResult.error
+  ) {
+    throw new ServiceError("Failed to load CMS content");
+  }
+
+  return {
+    sections: sectionsResult.data ?? [],
+    assets: assetsResult.data ?? [],
+    socialLinks: socialsResult.data ?? [],
+    skills: skillsResult.data ?? [],
+    contactChannels: contactsResult.data ?? [],
+  };
+}
+
+export async function saveCmsAdminData(payload: CmsPayload) {
+  const supabase = createSupabaseAdminClient();
+  const current = await getCmsAdminData();
+
+  for (const section of payload.sections) {
+    const { error } = await supabase.from("cms_sections").upsert(
+      {
+        section_key: section.section_key,
+        title: section.title,
+        eyebrow: section.eyebrow,
+        body: section.body,
+        content: section.content,
+        status: section.status,
+        order_index: section.order_index,
+      },
+      { onConflict: "section_key" }
+    );
+
+    if (error) {
+      throw new ServiceError("Failed to save content sections");
+    }
+  }
+
+  for (const asset of payload.assets) {
+    const { error } = await supabase.from("cms_assets").upsert(
+      {
+        asset_key: asset.asset_key,
+        title: asset.title,
+        asset_type: asset.asset_type,
+        file_url: asset.file_url,
+        file_name: asset.file_name,
+        file_type: asset.file_type,
+        alt_text: asset.alt_text,
+        metadata: asset.metadata,
+        is_active: asset.is_active,
+      },
+      { onConflict: "asset_key" }
+    );
+
+    if (error) {
+      throw new ServiceError("Failed to save content assets");
+    }
+  }
+
+  await replaceCmsRows<CmsPayload["socialLinks"][number]>({
+    table: "social_links",
+    existingIds: current.socialLinks.map((link: { id: string }) => link.id),
+    rows: payload.socialLinks,
+    mapRow: (link) => ({
+      platform: link.platform,
+      label: link.label,
+      url: link.url,
+      icon: link.icon,
+      order_index: link.order_index,
+      is_active: link.is_active,
+    }),
+  });
+
+  await replaceCmsRows<CmsPayload["skills"][number]>({
+    table: "skills",
+    existingIds: current.skills.map((skill: { id: string }) => skill.id),
+    rows: payload.skills,
+    mapRow: (skill) => ({
+      name: skill.name,
+      category: skill.category,
+      proficiency: skill.proficiency,
+      order_index: skill.order_index,
+      is_featured: skill.is_featured,
+      is_active: skill.is_active,
+    }),
+  });
+
+  await replaceCmsRows<CmsPayload["contactChannels"][number]>({
+    table: "contact_channels",
+    existingIds: current.contactChannels.map((channel: { id: string }) => channel.id),
+    rows: payload.contactChannels,
+    mapRow: (channel) => ({
+      channel_type: channel.channel_type,
+      label: channel.label,
+      value: channel.value,
+      url: channel.url,
+      order_index: channel.order_index,
+      is_active: channel.is_active,
+    }),
+  });
+
+  return getCmsAdminData();
+}
+
+export async function getContactMessage(messageId: string) {
+  const supabase = createSupabaseAdminClient();
+
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("*")
+    .eq("id", messageId)
+    .maybeSingle();
+
+  if (error) {
+    throw new ServiceError("Failed to fetch message");
+  }
+
+  if (!data) {
+    throw new ServiceError("Message not found", 404);
+  }
+
+  return data;
+}
+
+export async function getMessageStatusCounts() {
+  const supabase = createSupabaseAdminClient();
+  const statuses = ["new", "delivered", "read", "replied", "archived"];
+  const counts: Record<string, number> = { all: 0 };
+
+  const results = await Promise.all(
+    statuses.map((status) =>
+      supabase
+        .from("contact_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status)
+    )
+  );
+
+  for (const [index, result] of results.entries()) {
+    if (result.error) {
+      throw new ServiceError("Failed to fetch message status counts");
+    }
+
+    counts[statuses[index]] = result.count ?? 0;
+    counts.all += result.count ?? 0;
+  }
+
+  return counts;
 }

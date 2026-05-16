@@ -37,6 +37,12 @@ const optionalNullableUrl = (label: string) =>
     )
     .transform((value) => (value.length > 0 ? value : null));
 
+const requiredUrl = (label: string) =>
+  requiredText(label, 2000).refine(
+    (value) => isValidAssetReference(value),
+    `${label} must be a valid URL or root-relative path.`
+  );
+
 const nonNegativeOrderIndex = z
   .number()
   .int("Order index must be an integer.")
@@ -51,14 +57,25 @@ const projectStatusSchema = z.enum([
 
 const projectSectionTypeSchema = z.enum(["text", "code", "image"]);
 
-const messageStatusSchema = z.enum(["new", "read", "replied", "archived"]);
+const messageStatusSchema = z.enum([
+  "new",
+  "delivered",
+  "read",
+  "replied",
+  "archived",
+]);
 
-const imageFileSchema = z.custom<File>(
+const cmsSectionStatusSchema = z.enum(["draft", "published", "archived"]);
+const cmsAssetTypeSchema = z.enum(["image", "document", "link"]);
+
+const uploadFileSchema = z.custom<File>(
   (value): value is File => typeof File !== "undefined" && value instanceof File,
   {
     message: "No file provided.",
   }
 );
+
+const jsonRecordSchema = z.record(z.string(), z.unknown()).default({});
 
 export const contactFormSchema = z.object({
   full_name: requiredText("Full name", 500).min(
@@ -119,26 +136,14 @@ export const projectSectionUpdateSchema = z
   );
 
 export const projectImageCreateSchema = z.object({
-  image_url: requiredText("Image URL", 2000).refine(
-    (value) => isValidAssetReference(value),
-    "Image URL must be a valid URL or root-relative path."
-  ),
+  image_url: requiredUrl("Image URL"),
   caption: optionalNullableText("Caption", 500),
   order_index: nonNegativeOrderIndex.nullish().transform((value) => value ?? null),
 });
 
 export const projectImageUpdateSchema = z
   .object({
-    image_url: z
-      .string()
-      .trim()
-      .min(1, "Image URL is required.")
-      .max(2000, "Image URL must be at most 2000 characters.")
-      .refine(
-        (value) => isValidAssetReference(value),
-        "Image URL must be a valid URL or root-relative path."
-      )
-      .optional(),
+    image_url: requiredUrl("Image URL").optional(),
     caption: optionalNullableText("Caption", 500).optional(),
     order_index: nonNegativeOrderIndex.nullish().transform((value) =>
       value ?? null
@@ -153,14 +158,83 @@ export const messageStatusUpdateSchema = z.object({
   status: messageStatusSchema,
 });
 
+export const cmsSectionPayloadSchema = z.object({
+  section_key: requiredText("Section key", 120).regex(
+    /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/,
+    "Section key must use lowercase letters, numbers, dots, underscores, or hyphens."
+  ),
+  title: optionalNullableText("Title", 300),
+  eyebrow: optionalNullableText("Eyebrow", 300),
+  body: optionalNullableText("Body", 20000),
+  content: jsonRecordSchema,
+  status: cmsSectionStatusSchema.default("draft"),
+  order_index: nonNegativeOrderIndex.default(0),
+});
+
+export const cmsAssetPayloadSchema = z.object({
+  asset_key: requiredText("Asset key", 120).regex(
+    /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/,
+    "Asset key must use lowercase letters, numbers, dots, underscores, or hyphens."
+  ),
+  title: requiredText("Title", 300),
+  asset_type: cmsAssetTypeSchema,
+  file_url: requiredUrl("File URL"),
+  file_name: optionalNullableText("File name", 500),
+  file_type: optionalNullableText("File type", 200),
+  alt_text: optionalNullableText("Alt text", 500),
+  metadata: jsonRecordSchema,
+  is_active: z.boolean().default(true),
+});
+
+export const socialLinkPayloadSchema = z.object({
+  id: z.string().uuid().optional(),
+  platform: requiredText("Platform", 120),
+  label: requiredText("Label", 120),
+  url: requiredUrl("URL"),
+  icon: optionalNullableText("Icon", 120),
+  order_index: nonNegativeOrderIndex.default(0),
+  is_active: z.boolean().default(true),
+});
+
+export const skillPayloadSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: requiredText("Skill", 120),
+  category: requiredText("Category", 120),
+  proficiency: optionalNullableText("Proficiency", 120),
+  order_index: nonNegativeOrderIndex.default(0),
+  is_featured: z.boolean().default(false),
+  is_active: z.boolean().default(true),
+});
+
+export const contactChannelPayloadSchema = z.object({
+  id: z.string().uuid().optional(),
+  channel_type: requiredText("Channel type", 80),
+  label: requiredText("Label", 120),
+  value: requiredText("Value", 500),
+  url: optionalNullableUrl("URL"),
+  order_index: nonNegativeOrderIndex.default(0),
+  is_active: z.boolean().default(true),
+});
+
+export const cmsPayloadSchema = z.object({
+  sections: z.array(cmsSectionPayloadSchema).max(50),
+  assets: z.array(cmsAssetPayloadSchema).max(50),
+  socialLinks: z.array(socialLinkPayloadSchema).max(50),
+  skills: z.array(skillPayloadSchema).max(100),
+  contactChannels: z.array(contactChannelPayloadSchema).max(50),
+});
+
 export const uploadPayloadSchema = z.object({
-  file: imageFileSchema
-    .refine((file) => file.type.startsWith("image/"), "File must be an image.")
+  file: uploadFileSchema
     .refine(
-      (file) => file.size <= 5 * 1024 * 1024,
-      "File size must be less than 5MB."
+      (file) => file.type.startsWith("image/") || file.type === "application/pdf",
+      "File must be an image or PDF."
+    )
+    .refine(
+      (file) => file.size <= 10 * 1024 * 1024,
+      "File size must be less than 10MB."
     ),
-  type: z.enum(["featured", "project"]),
+  type: z.enum(["featured", "project", "profile", "resume", "cms"]),
   projectId: z
     .union([z.string(), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" ? value.trim() : ""))
@@ -168,16 +242,18 @@ export const uploadPayloadSchema = z.object({
 });
 
 export type ContactFormSchemaInput = z.infer<typeof contactFormSchema>;
-export type ContactFormField = keyof ContactFormSchemaInput;
+export type ContactFormField = Extract<keyof ContactFormSchemaInput, string>;
 export type ProjectPayload = z.infer<typeof projectPayloadSchema>;
-export type ProjectPayloadField = keyof ProjectPayload;
+export type ProjectPayloadField = Extract<keyof ProjectPayload, string>;
 export type ProjectSectionCreatePayload = z.infer<typeof projectSectionCreateSchema>;
 export type ProjectSectionUpdatePayload = z.infer<typeof projectSectionUpdateSchema>;
-export type ProjectSectionField = keyof ProjectSectionCreatePayload | keyof ProjectSectionUpdatePayload;
+export type ProjectSectionField = Extract<keyof ProjectSectionCreatePayload | keyof ProjectSectionUpdatePayload, string>;
 export type ProjectImageCreatePayload = z.infer<typeof projectImageCreateSchema>;
 export type ProjectImageUpdatePayload = z.infer<typeof projectImageUpdateSchema>;
-export type ProjectImageField = keyof ProjectImageCreatePayload | keyof ProjectImageUpdatePayload;
+export type ProjectImageField = Extract<keyof ProjectImageCreatePayload | keyof ProjectImageUpdatePayload, string>;
 export type MessageStatusUpdatePayload = z.infer<typeof messageStatusUpdateSchema>;
-export type MessageStatusField = keyof MessageStatusUpdatePayload;
+export type MessageStatusField = Extract<keyof MessageStatusUpdatePayload, string>;
+export type CmsPayload = z.infer<typeof cmsPayloadSchema>;
+export type CmsPayloadField = Extract<keyof CmsPayload, string>;
 export type UploadPayload = z.infer<typeof uploadPayloadSchema>;
-export type UploadField = keyof UploadPayload;
+export type UploadField = Extract<keyof UploadPayload, string>;
